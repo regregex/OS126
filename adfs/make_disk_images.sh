@@ -1,7 +1,7 @@
 #!/bin/bash
 
-PREFIX=AcornOS120
-TITLE="MOS 1.20"
+PREFIX=AcornOS126
+TITLE="MOS 1.26"
 MAKE=MakeMOS
 
 # This script depends on the following:
