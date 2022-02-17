@@ -16,7 +16,7 @@
 # Drive 3
 # - OS source code (continue)
 
-PREFIX=AcornOS120_disk
+PREFIX=AcornOS126_disk
 
 rm -rf tmp
 mkdir -p tmp/d0
@@ -92,7 +92,7 @@ for i in 0 1 2 3
 do
 beeb blank_ssd tmp/d${i}.ssd
 beeb putfile   tmp/d${i}.ssd tmp/d${i}/*
-beeb title     tmp/d${i}.ssd "MOS 1.20/${i}"
+beeb title     tmp/d${i}.ssd "MOS 1.26/${i}"
 done
 
 # Make drive 0 bootable
