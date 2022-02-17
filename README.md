@@ -23,11 +23,11 @@ OS 1.26 has the following modifications:
 - Locations &02CF, &02D0 and &02D1 are not touched
 - Locations &C4 and &CB are unused while the CFS or RFS is active
 - Semantically transparent optimisations
-- 94 bytes cleared in the main section + 1 existing byte = 95 bytes free
+- 100 bytes cleared in the main section + 1 existing = 101 bytes free
 - 21 bytes cleared in the top page
 
 The free space is placed at the end of the \*command table, currently
-located at address &9F6D.
+located at address &9F69.
 
 Build requirements: OS 1.26
 ---------------------------
@@ -36,10 +36,10 @@ See the upstream release notes, included below, on how to assemble OS
 1.26 from the prebuilt disc images, substituting the version number as
 necessary.
 
-With a Windows system it may be more convenient to build the ROM image
-in a RISC OS emulator.  There is a
-[4corn article](https://www.4corn.co.uk/articles/65hostandmos/)
-providing detailed instructions on how to install RPCEmu, assemble a
+With a Windows system available it may be more convenient to build the
+ROM image in a RISC OS emulator.  An
+[article on 4corn](https://www.4corn.co.uk/articles/65hostandmos/)
+provides detailed instructions on how to install RPCEmu, assemble a
 Turbo second processor emulator inside, and build OS 1.20 in the Turbo
 emulator.  
 Once you have completed the OS 1.20 build, load the
@@ -49,12 +49,13 @@ Load Drive :0...).  Open drive :0, and copy all files from :0 into the
 files.  Then enter these commands into the existing command window to
 build OS 1.26:
 
+    *Quit
     *EmulateTurbo
     *Exec MakeMOS
     *Quit
 
 The current ROM image has an MD5SUM of
-`80620f1db41e88626b6d9270ec45e6d0`.
+`dde1be39596d8fc22ebdc682ce7905fd`.
 
 Build requirements: disc images
 ------------------------------
@@ -74,23 +75,12 @@ Then enter the respective `dfs/` or `adfs/` directory, and enter:
 
     sh make_disk_images.sh
 
-Known problems
---------------
-
-- Certain \*commands in the Opus DDOS and Challenger ROMs corrupt the
-  stack and crash on exit
-  ([patched disassemblies](http://regregex.bbcmicro.net/#features.bbc)
-  are available).
-- Many software titles, especially games, decrypt themselves using the
-  contents of the OS ROM as a key.  These titles are incompatible
-  with OS 1.26.
-
 Patching the \*command table
 ----------------------------
 
 With the space made available, it is now practical to add \*commands to
 the built-in OS command set.  New entries can be inserted in place of
-the NUL terminator byte, currently located at address &9F6C.
+the NUL terminator byte, currently located at address &9F68.
 
 Command table entries have the following form:
 
@@ -114,13 +104,14 @@ address comes next.
 
 The entry ends with an auxiliary byte that controls the register values
 on entry to the \*command code.  Its value is passed to the routine in
-the accumulator.  When the value is less than &80, the X and Y registers
-contain, respectively, the low and high bytes of the address of the
-first *argument* in the command line following the command name.  
+the accumulator.  
+When the value is less than &80, the X and Y registers contain,
+respectively, the low and high bytes of the address of the first
+*argument* in the command line following the command name.  
 When it is &80 or more, the Y register contains the offset of the first
 argument from the start of the command line (addressed by the GSINIT
 pointer at &F2..3), and the X register is undefined.  Passing Y to
-the GSINIT system call will select the argument.  
+the GSINIT system call will select the argument.
 
 OSCLI calls the action address with the carry flag clear (`CC`).  The
 zero flag is set (`EQ`) if and only if there are no arguments after the
@@ -134,25 +125,25 @@ Remember to replace the terminator byte at the end of the new table!
 
 ### Useful addresses
 
-Pointing a \*command at `CLIEND` (&E050) passes it to paged ROMs or the
+Pointing a \*command at `CLIEND` (&E052) passes it to paged ROMs or the
 current filing system.  This is convenient for disposing of the
 abbreviated forms of a command; the most efficient auxiliary byte value
-is &FF.  
+is &FF.
 
 To bypass utility ROMs, an action address equal to `JMIFSC - &07`
-(&E059) sends the command straight to the filing system control vector,
+(&E05B) sends the command straight to the filing system control vector,
 defined at &021E.
 
-`JMIUSR` (&E67C) sends a \*command to USERV, defined at &0200.  An
+`JMIUSR` (&E67E) sends a \*command to USERV, defined at &0200.  An
 auxiliary byte value of &01 emulates `*LINE`; other values (between &02
 and &7F inclusive) cause entry into the USERV routine with non-standard
 reason codes.  X and Y must contain the address of the first argument.
 
-In routines, `SKIPSP` (&E069) returns a non-space character in A, its
-offset in Y, and `EQ` if that character is CR.  `SKIPSN` (&E068) is the
+In routines, `SKIPSP` (&E06B) returns a non-space character in A, its
+offset in Y, and `EQ` if that character is CR.  `SKIPSN` (&E06A) is the
 same but ignores the current character by advancing Y over it.
 
-A command named `I` whose routine begins with
+As an example, a command named `I` whose routine begins with
 
      BEQ STARI
      JMP CLIEND
@@ -173,7 +164,7 @@ More space at a pinch
 ---------------------
 
 If it comes to the crunch a little more room can be made by
-reassembling, minus some frills.  Delete lines 79..84 from `src/MOS34`:
+reassembling, minus some frills.  Delete lines 80..85 from `src/MOS34`:
 
      INY
      STAIY &0000 ;saves 24 ms
@@ -184,7 +175,18 @@ reassembling, minus some frills.  Delete lines 79..84 from `src/MOS34`:
 
 Modify line 225 of `src/MOS38` accordingly:
 
-     % 104 ;padding
+     % 110 ;padding
+
+Known problems
+--------------
+
+- Certain \*commands in the Opus DDOS and Challenger ROMs corrupt the
+  stack and crash on exit
+  ([patched disassemblies](http://regregex.bbcmicro.net/#features.bbc)
+  are available).
+- Many software titles, especially games, decrypt themselves using the
+  contents of the OS ROM as a key.  These titles are incompatible
+  with OS 1.26.
 
 * * *
 
