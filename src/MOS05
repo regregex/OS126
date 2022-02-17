@@ -38,7 +38,6 @@ ENSCRO PHP  ;To preserve carry
  DEC PCSY ;Scroll DOWN, so follow it down
 ENSCRX RTS ;May be referenced from MOS04
 ENSCRQ INC PCSY ;Scroll UP, so go up as well
-FONT0
  RTS
 
 ;OCSRDL Delete output cursor

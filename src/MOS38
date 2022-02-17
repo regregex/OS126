@@ -222,7 +222,7 @@ COMTAB  ;table of MOS commands
 
  = ZERO ;end of table
 
- % 95 ;padding
+ % 101 ;padding
 
 CLINT
  STX WORK +&00

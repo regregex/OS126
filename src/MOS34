@@ -98,8 +98,7 @@ CLEAR0
 ;
 ; force soft keys reset
  STX USKFLG ;USKFLG := non-zero
-
-;  
+;
 SFTRST
 ;
 ; initialise addressable latch outputs hi

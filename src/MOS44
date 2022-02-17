@@ -750,7 +750,7 @@ RADCX  ;read ADC channel X
 
 FIRE  ;get status of fire buttons
 ; X=0, A=0, C=0
- SBC PBQ ;take one's complement of system VIA port B 
+ SBC PBQ ;take one's complement of system VIA port B
  RORA
  RORA
  RORA

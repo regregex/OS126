@@ -517,6 +517,21 @@ LOOKLR JSR RDHEAD
  STX ERRSW
  BEQ LOOKL5 ;Always new line
 
+LOOKL4 BVC LOOKL3 ;Header interrupted
+ LDAIM &FF
+ JSR CHKBIN ;Check data
+
+LOOKL3 LDXIM &00
+ JSR CATERR ;Print errors and header
+
+ LDA SROMSW
+ BEQ LOOKL9 ;In CFS -> continue
+ BIT USFLGS
+ BVC LOOKL8 ;=> short msgs and skip beween files
+
+LOOKL9 BIT INFO +BKFLAG
+ BMI LOOKLA ;Look for block zero
+
 LOOKL1 JSR NXTBLK ;Blokno := INFO +BKNO + 1
 
  JSR RDHEAD ;Read header
@@ -563,22 +578,6 @@ LOOKLA LDAIM &FF
  STA INFO +BKNOLO ;Look for block zero of next file
  STA INFO +BKNOHI
  BNE LOOKL1
-
-LOOKL4 BVC LOOKL3 ;Header interrupted
- LDAIM &FF
- JSR CHKBIN ;Check data
-
-LOOKL3 LDXIM &00
- JSR CATERR ;Print errors and header
-
- LDA SROMSW
- BEQ LOOKL9 ;In CFS -> continue
- BIT USFLGS
- BVC LOOKL8 ;=> short msgs and skip beween files
-
-LOOKL9 BIT INFO +BKFLAG
- BMI LOOKLA ;Look for block zero
- BPL LOOKL1 ;Look for next block
 
 
  TTL C.F.S Main Routines - FIND

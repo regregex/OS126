@@ -233,7 +233,7 @@ POKE  ;write byte to I/O processor
  STAIY WORDX ;store byte read in OSWORD block
 VER
  BEQ PVER
- LDXIM &01 ;X=1 for OSBYTE 0,1 MOS version 1
+ LDXIM MCVER ;X=1 for OSBYTE 0,1 MOS version 1
 MSGONY  ;used by MSGON below
  LDAIM ZERO
  RTS

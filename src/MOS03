@@ -482,7 +482,34 @@ SETPWC RTS  ;This used to be FSFAIL & ESCFL & ESCBB as well
 GS LDXIM QEND-&03-V
  LDYIM ORG-V ;Copy the new origin (external co-ords) to ORGY..
  JSR COPYF
- JMP IEG ;Update EXTERNAL cursor
+;IEG Inverse of EIG. Converts Icursor to Ecursor
+
+IEG LDYIM GCSR-V ;Copy GCSIY to GCSY
+ JSR COPYFB
+ LDXIM &02 ;Convert y co-ordinates
+ LDYIM &02 ;by multiplying by 4
+ JSR IEGC
+ LDXIM &00 ;Convert x co-ordinates
+ LDYIM &05 ;By multiplying by 2
+ LDA NPIX ;4, or 8, depending on (NPIX)
+IEGA DEY
+ LSRA
+ BNE IEGA
+ LDA MEMODE ;Get memory map type
+ BEQ IEGE ;=0 if 20K mode in which case skip one multiplication
+
+IEGC ASLAX GCSR
+ ROLAX GCSR+&01
+IEGE
+ DEY
+ BNE IEGC
+ SEC  ;Now subtract off origin to give external co-ordinate
+ JSR IEGD
+ INX
+IEGD LDAAX GCSR
+ SBCAX ORG
+ STAAX GCSR
+ RTS
 
 ;DEL ($7F) Delete previous char
 
