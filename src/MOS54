@@ -13,7 +13,6 @@ SRINIT  ;initialise SEROM environment for CFS
  LDAIM &F0-&01 ;$01 adjusts for future INC SEROM
 ; SEROM will cycle $F0 ... $FF ... $00 ... $10 (max)
  STA SEROM
- RTS
 
 
 SRNEXT  ;move on to next SEROM
@@ -77,12 +76,13 @@ RABLP
 ; read lo byte when X=0, hi byte when X=1
  JSR RDBYTE ;does not corrupt X
 ;
- LDYIM &08
+ SEC ;C undefined if entered at SPLIND
+ ROLA
 RABLO  ;reverse bits in A into ROMPTR+(0/1)
- ASLA
  RORAX ROMPTR+&01
- DEY
+ ASLA
  BNE RABLO ;[process 8 bits]
+ ; C=1, Y clobbered in SPLOAD->SPL->SPL1
 ;
  INX
  BEQ RABLP ;repeat loop once more with X=0

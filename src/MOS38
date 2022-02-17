@@ -76,11 +76,11 @@ RDCH2  ;entry point used when INKEY count exhausted (N.B. RDCTEM=$FF)
  TAX
  LDA RDCTEM ;A := character
  RTS
-COPYR  ;DO NOT MOVE (must precede COMTAB with bytes < $80)
- = ")"
- = "C"
- = "("
- = ZERO
+;START OF MOS 1.25
+; COPYR had been anchored here for fear that CLISKP
+; would be entered with X<2; this is now ruled out
+; but instead end-of-table marker must be within
+; 253 bytes of COMTAB
 ; command level interpreter
 COMTAB  ;table of MOS commands
 ; this table uses the fact that all routine address hi-bytes
@@ -90,114 +90,139 @@ COMTAB  ;table of MOS commands
 ;      code following address is A reg on entry to address
 ;      A+ => enter with XY -> line
 ;      A- => enter with Y = offset
-; .
- = "."
- & /JMIFSC
- = FSCAT ;enter with XY -> line
-
-; FX
- = "FX"
- & /FX
- = &FF ;enter with Y = offset
-
-; BASIC
- = "BASIC"
- & /BASIC
- = NULL ;don't care
 
 ; CAT
+;must be first to trap *.
  = "CAT"
  & /JMIFSC
  = FSCAT ;enter with XY -> line
 
+; FX
+;second entry in OS 1.20.
+;some naughty code might rely on the same quick response
+;but we also want to give fast access to USERV (*FX136)
+;and match early due to the sheer volume of calls
+ = "FX"
+ & /FX
+ = &FF ;enter with Y = offset
+
 ; CODE
+;match after FX to take less time than *FX136
  = "CODE"
  & /FXN
  = FXCODE ;enter with Y = offset
 
-; EXEC
- = "EXEC"
- & /EXEC
- 
- = ZERO ;enter with XY -> line
-
-; HELP
- = "HELP"
- & /HELP 
- 
- = &FF ;enter with Y = offset
-
-; KEY
- = "KEY"
- & /KEY 
- 
- = &FF ;enter with Y = offset
-
 ; LOAD
+;must come before LINE to trap *L.
  = "LOAD"
  & /LOAD 
  
  = &00 ;enter with XY -> line
 
 ; LINE
+;needs fast service the most as user code may be time critical
+;the only (trivial) way to pass a string from parasite to USERV
  = "LINE"
  & /JMIUSR 
-  = &01 ;enter with A=$01, XY -> line
+  = &01 ;enter with A=$01, XY -> line, C=0
 
-; MOTOR
- = "MOTOR"
- & /FXN 
- 
- = FXMOTR ;enter with Y = offset
+; default if first character is not alpha, |, . or /
+;filter the wordless *commands off early
+;rather than needlessly compare with each command;
+;a substitute for testing the first char in code
+ & /JMIFSC 
+ = FSNAME ;enter with XY -> line
 
 ; OPT
+;part of a program's operation, has high priority
  = "OPT"
  & /FXN 
  
  = FXOPT ;enter with Y = offset
 
 ; RUN
+;slow but provides the computer with work, should not hold it up
  = "RUN"
  & /JMIFSC 
  
  = FSRUN ;enter with XY -> line
 
-; ROM
- = "ROM"
+; EXEC
+;likewise
+ = "EXEC"
+ & /EXEC
+ 
+ = ZERO ;enter with XY -> line
+
+; MOTOR
+;a quick command but not urgent coming through OSCLI
+ = "MOTOR"
  & /FXN 
  
- = FXSROM ;don't care
+ = FXMOTR ;enter with Y = offset
 
 ; SAVE
+;must come before SPOOL to trap *S.
+;a slow command and rarer than loading
  = "SAVE"
  & /SAVE 
  
  = ZERO ;enter with XY -> line
 
 ; SPOOL
+;also slow and rarer than saving
  = "SPOOL"
  & /SPOOL 
  
  = ZERO ;enter with XY -> line
 
+; KEY
+;low volume, called by programs at setup
+ = "KEY"
+ & /KEY 
+ 
+ = &FF ;enter with Y = offset
+
 ; TAPE
+;must come before TV to trap *T.
+;slightly more complex, called by programs at setup
  = "TAPE"
  & /FXN 
  
- = FXTAPE ;don't care
+ = FXTAPE ;enter with Y = offset
 
 ; TV
+;cosmetic, called by programs at setup
  = "TV"
  & /FXN 
  
  = FXTV ;enter with Y = offset
 
-; default if first character is not alpha, |, . or /
- & /JMIFSC 
+; HELP
+;user command
+ = "HELP"
+ & /HELP 
  
- = FSNAME ;enter with XY -> line
+ = &FF ;enter with Y = offset
+
+; ROM
+;rarely used. as RFS installations are site-specific
+;this is essentially a user command
+ = "ROM"
+ & /FXN 
+ 
+ = FXSROM ;don't care
+
+; BASIC
+;invokes the language (i.e. non-transient)
+;called either by the user or in a slow *EXEC file
+ = "BASIC"
+ & /BASIC
+ = &01 ;bit 0 set for ILR2 to enter ROM with C=1
+
  = ZERO ;end of table
 
+ % 95 ;padding
 
 CLINT
  STX WORK +&00
@@ -207,8 +232,8 @@ CLINT
  JSR JMIFSC
 ; check line is terminated by CR
  LDYIM ZERO
-CLICHK LDAIY WORK
- CMPIM MCR
+ LDAIM MCR
+CLICHK CMPIY WORK
  BEQ CLILOK ;[terminator present]
  INY
  BNE CLICHK
@@ -222,8 +247,11 @@ CLIR  ;skip leading spaces and asterisks
  BEQ CLIRTS ;[reached end-of-line, ignore line]
  CMPIM SPLAT
  BEQ CLIR ;[asterisk, ignore]
+ [ FALSE=0
+;redundant, cannot be CR, SP or asterisk here
  JSR SKIPSP ;skip spaces
  BEQ CLIRTS ;[reached end-of-line, ignore line]
+ ]
 ; ignore comment line
  CMPIM "|"
  BEQ CLIRTS ;[*| command]
@@ -240,74 +268,50 @@ NOTSL
  STY CLIRY
 ; reached command name
 ; look for name in table
- LDXIM ZERO ;set X to scan command table
- BEQ DOT ;[ALWAYS JUMP]
+ LDXIM ZERO ;X=0 going to 1
+;fall through to CLICMP
+
 ;
 ; this code should intercept all strange commands,
 ; including NULs and top-bit-set characters
 ;
 CLISCN
- EORAX COMTAB ;compare
- ANDIM &DF ;equate cases
+;
+; match so far, C=0
+;
  BNE CLINXC ;[mismatch, try next CLI command name]
-;
-; match so far, C=1
-;
- INY ;step to next user character
- CLC ;force following BCS to fail first time thru
 CLISTP
- BCS CLIMCH ;[forced match by .]
  INX ;step to next/first CLI command character
  LDAIY WORK ;get next user character
- JSR CAPS
- BCC CLISCN ;[alpha]
-;
-; user command name delimited by non-letter
-;
-DOT
-; match on full name ?
- LDAAX COMTAB ;get next CLI command character
- BMI CLIMFN ;[match on full name]
-;
-; not a match on full name, check for forced match
-;
- LDAIY WORK ;get this user character
+;CLICMP
+ INY ;step to next user character
  CMPIM "." ;force match ?
- BEQ CLINXS ;[forced match, search for terminator, C=1]
-;
-; not forced match, skip to next CLI command name
-;
+ BEQ CLISKP ;[forced match, search for terminator, C=1]
+ JSR CAPS ;CS if not alpha incl. if -ve
+ ANDIM &5F ;equate cases and also clear bit 7
+ EORAX COMTAB -&01;compare
+ BCC CLISCN ;[alpha]
+ BMI CLINXS ;C=1; was CLIMFN but divert for INX;INX
+ CLC ;user word shorter than CLI command, skip to next
 CLINXC
- CLC
  LDY CLIRY ;restore Y (Y points to user command name)
-;
-; skip to next CLI command name
-;
- DEY ;adjust for following INY
-; C=0
+ INY ;adjust for following DEY
 CLINXS  ;C=1
- INY
- INX
+ DEY ;Y points to character after user word
+;[forced match by .]
 CLISKP
  INX ;N.B. X points to character +2 after one to be compared
  LDAAX COMTAB -&02
  BEQ CLIEND ;[no more CLI command names]
  BPL CLISKP ;[not reached address hi-byte]
- BMI CLISTP ;[ALWAYS jump, compare next CLI command name]
-; NEVER fall thru
-;
+ INX ;skip address lo-byte
+ BCC CLISTP ;if mismatch then skip to next command
 CLIMFN  ;full name match
-; adjust for following DEXs
- INX
- INX
-CLIMCH  ;match
- DEX
- DEX
 ; found CLI command match
 ; construct JMI hi-byte value to command processing code
  PHA
 ; construct JMI lo-byte value to command processing code
- LDAAX COMTAB +&01
+ LDAAX COMTAB -&02
  PHA
 ; skip spaces after command name
  JSR SKIPSP
@@ -319,11 +323,11 @@ CLIMCH  ;match
 
 
 CLIXYA  ;conditionally make XY -> rest of line
- LDAAX COMTAB +&02
+ LDAAX COMTAB -&01
  BMI CLIXY0 ;[keep Y = offset of rest of line from WORK]
 CLIXY  ;make XY -> rest of command line
  TYA ;A = offset of rest of line
- LDYAX COMTAB +&02 ;Y := function code
+ LDYAX COMTAB -&01 ;Y := function code
 CLIXY2
  CLC
  ADC WORK ;N.B. C=1 => carry
@@ -343,8 +347,8 @@ SVACK  ;command accepted by service ROM
 BASIC  ;select BASIC language ROM
  LDX BROMID
  BMI NBASIC ;[no BASIC ROM]
- SEC ;used by tube
- JMP SELANG ;enter BASIC ROM (N.B. C=1)
+ JMP ILR2 ;enter BASIC ROM (N.B. A b0=1, enter with C=1)
+;END OF MOS 1.25
 NBASIC  ;BASIC ROM not present so offer to service ROMs
 CLIEND  ;entered here if command not recognised or does not exist
 ; offer command to service ROMs
@@ -569,6 +573,7 @@ WRCHNS  ;no spooling
 WRCHNN
 ; exit restoring registers
  PLA ;pull redundant byte
+PLYXAR
  PLA
  TAY
  PLA
@@ -646,8 +651,8 @@ STROBE  ;send character to selected printer
 ; 2:  RS423 output
 ; 3:  user print routine
 ; 4:  net printer server
- CMPIM PCEN
- BNE STROB1 ;[not centronics]
+ CMPIM PRS
+ BCS STROB1 ;[not centronics]
 ; centronics interface
 ; this code must be executed with interrupts disabled
 ; otherwise a CA1 interrupt coinciding with the STA PAR
@@ -672,7 +677,6 @@ STROBE  ;send character to selected printer
 
 STROB1  ;not centronics
 ; X = bufferid
- CMPIM PRS
  BNE STROB3 ;[not RS423]
 ; printer is RS423
  LDY RSTUT
@@ -772,19 +776,23 @@ PURGEX  ;entered by OSWORD sound routine with C=1
  JSR SCRST
 PURNSB
 ;
-; flag buffer dormant
- SEC
- RORAX BACTIV
-;
 ; check for input buffer
  CPXIM OUTPUT
- BCS PURGE3 ;[output buffer]
+ BCS VAULT ;[output buffer]
 ;
 ; input buffer, kill soft key expansion and VDU queueing
 ;
  LDAIM ZERO
  STA SOFKL ;kill soft key expansion
  STA QPOSN ;kill VDU queueing
+;
+;if input buffer OR first output buffer i.e. RS423
+;then Z=1; buffer flag unused, preserve
+VAULT BEQ PURGE3
+;otherwise C=1
+; flag buffer dormant
+ RORAX BACTIV
+;CNPV routine ignores C when V=1
 ;
 PURGE3
 ;

@@ -323,39 +323,39 @@ BYTEM * &0075
 ; read from FRED
 ; in:   X = offset
 ; out:  Y = value
- & RFRED
+ & CHEQUE
  
 ;
 ; $93
 ; write to FRED
 ; in:   X = offset,  Y = value
- & WFRED
+ & CHEQUE
  
 ;
 ; $94
 ; read from JIM
 ; in:   X = offset
 ; out:  Y = value
- & RJIM
+ & CHEQUE
  
 ;
 ; $95
 ; write to JIM
 ; in:   X = offset,  Y = value
- & WJIM
+ & CHEQUE
  
 ;
 ; $96
 ; read from SHEILA
 ; in:   X = offset
 ; out:  Y = value
- & RSHEIL
+ & CHEQUE
  
 ;
 ; $97
 ; write to SHEILA
 ; in:   X = offset,  Y = value
- & WSHEIL
+ & CHEQUE
  
 ;
 ; $98
@@ -737,9 +737,10 @@ CNTRS0
 
 RADCX  ;read ADC channel X
  BMI BUFN ;[count entries in buffer]
- BEQ FIRE ;[get status of fire buttons]
  CPXIM &05
  BCS BADADC
+ TXA
+ BEQ FIRE ;[get status of fire buttons]
 ; return latest conversion
  LDYAX ADCHIV -&01
  LDAAX ADCLOV -&01
@@ -748,13 +749,12 @@ RADCX  ;read ADC channel X
 
 
 FIRE  ;get status of fire buttons
-; X=0
- LDA PBQ
+; X=0, A=0, C=0
+ SBC PBQ ;take one's complement of system VIA port B 
  RORA
  RORA
  RORA
  RORA
- EORIM &FF
  ANDIM &03 ;A := fire buttons
  LDY ADCFLG ;return latest conversion number
 ; clear latest conversion number

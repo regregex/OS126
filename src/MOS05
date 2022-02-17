@@ -38,6 +38,7 @@ ENSCRO PHP  ;To preserve carry
  DEC PCSY ;Scroll DOWN, so follow it down
 ENSCRX RTS ;May be referenced from MOS04
 ENSCRQ INC PCSY ;Scroll UP, so go up as well
+FONT0
  RTS
 
 ;OCSRDL Delete output cursor
@@ -57,23 +58,21 @@ ENSCRR RTS
 
 OCSRWR PHP
  PHA
+OCSRIV LDAIM INVSXT
  LDY BYTCH
+ CPYIM &20 ;Mode 2 ?
+ BEQ OCSRIW ;Yes?, then don't invert the flashing bit
+ LDAIM &FF
  DEY  ;TTX?
- BNE OCSRIV
+ BNE OCSRIU
  LDAIY ZMEMT ;(Y)=0 Yes?, then read byte directly from screen
  STA TTXTMP ;and store it out of harm's way (no plotting in this mode)
- LDA CHCSR ;Write the cursor
- STAIY ZMEMT ;(Y)=0
- JMP OCSREX
-OCSRIV LDAIM &FF
- CPYIM &1F ;Mode 2 ?
- BNE OCSRIW
- LDAIM INVSXT ;Yes?, then don't invert the flashing bit
-OCSRIW STA ZTEMP
-OCSRIU LDAIY ZMEMT ;Invert the character cell
- EOR ZTEMP
+ EOR CHCSR ;Write the cursor
+OCSRIU PHA
+ EORIY ZMEMT ;Invert the character cell
  STAIY ZMEMT
- DEY
+ PLA
+OCSRIW DEY
  BPL OCSRIU
  BMI OCSREX ; Branch always
 

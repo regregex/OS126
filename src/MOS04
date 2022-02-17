@@ -125,10 +125,10 @@ CHMODC ASLA
  LDAAY STSCTB ;Addr. 1st to disp'ed
  STA BEGSCN
  TYA ;Get byte width type
- ADCIM &02 ;(c=0) Map (0,1,2,3,4) to (2,2,1,1,0)
  EORIM &07
  LSRA
  TAX
+ DEX ;Map (0,1,2,3,4) to (2,2,1,1,0)
  LDAAX TBZTBA ;LSB of table addr.
  STA ZTBL
  LDAIM /(HRGTB ) ;MSB of same (always the same)
@@ -188,6 +188,23 @@ PRABA LDAIY ZTEMPC ;Copy definition
  CPYIM &08
  BNE PRABA
  RTS
+
+;Get the next line up,
+;test if wraparound
+;This is here as padding
+
+SUBROW PHA
+ TXA
+ SEC
+ SBC BYTROW
+ TAX
+ PLA
+ SBC BYTROW +&01
+ CMP BEGSCN
+ RTS
+
+;must pad here to keep CLASCA and CLASCE on same page
+ % 1
 
 CLASCA STAAX &3000 ;Modes 1-3 (20K)
  STAAX &3100
@@ -272,21 +289,6 @@ CLASCE STAAX &7C00 ;Mode 7 (1k = TTX)
  INX
  BEQ ENSCRX
 RUNNER JMI JVEC
-
-;Get the next line up,
-;test if wraparound
-;This is here as padding
-
-SUBROW PHA
- TXA
- SEC
- SBC BYTROW
- TAX
- PLA
- SBC BYTROW +&01
- CMP BEGSCN
-FONT0
- RTS
 
 FONT
 ;

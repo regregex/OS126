@@ -322,6 +322,7 @@ CHEKLP LDA ITYPE
  JSR ESCAPE
  LDA SROMSW
  BEQ CHEKLP ;If no speech, wait for end
+ ;GoMMC tape patch has FAE0 NOP;NOP
  JSR IRUPT ;Otherwise, get next byte
  JMP CHEKLP ;And loop
 
@@ -602,6 +603,30 @@ CHKHXX
 TINIT0
  RTS
 
+;FSC jump table moved to end of main section.
+;This displaces the free space into the middle
+;of the ROM where it can be used for any purpose
+;(an opcode or branch address at &FBFF would cause
+;a dummy read cycle in FRED.)
+
+JMPTAB
+ = CFSOPT-&01
+ = CFSEOF-&01
+ = RUN-&01 ;"*.<string>"
+ = MBDCMD-&01 ;"*<string>" = Bad command
+ = RUN-&01 ;"*RUN <string>"
+ = CAT-&01
+ = SHUTES-&01 ;die
+NOTAB * .-JMPTAB
+ = /(CFSOPT-&01)
+ = /(CFSEOF-&01)
+ = /(RUN-&01)
+ = /(MBDCMD-&01)
+ = /(RUN-&01)
+ = /(CAT-&01)
+ = /(SHUTES-&01)
+
+;MOS 1.26: Adjust padding in MOS38 to hit &FC00 here
 
 END
 
@@ -611,6 +636,11 @@ END
 
 ; pad with zero bytes to ensure ROM CRCs consistent
  % &100
+
+ [ . > &FC00+&100
+ ! 0,"Overran FRED by ":CC:(:STR:(.-&FC00-&100)):CC:" byte(s)"
+ ]
+
 
  < 1
 

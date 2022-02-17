@@ -89,6 +89,32 @@ MVPRC1  ;set video processor register 1
  PLP
  RTS
 
+; fetch/store byte from MMIO without dummy read cycle
+; on entry A=OSBYTE call no. X=addr lo Y=byte C=1
+CHEQUE ADCIM &65 ;C=1; A=&FC..FE
+ SEC
+ RORA ;C=0 read memory C=1 write
+; fetch/store byte from I/O mem without dummy read
+; on entry A=addr hi X=addr lo Y=byte C=0 read C=1 write
+BOUNCE
+ STA PEEKHI ;MSB address
+ STX PEEKLO ;LSB address
+ LDXIM &00
+ BCC BREAD
+ TYA
+ STAIX PEEKLO
+ RTS
+BREAD
+ LDAIX PEEKLO
+ TAY
+ SEC ;return C=1 from OSBYTE/OSWORD
+ RTS
+
+BADSTR
+ BRK ;report error 'Bad string'
+ = BADST
+ = "Bad string"
+ = ZERO ;end of message
 
 GSINTC  ;intialise for string access (read item)
 
@@ -193,13 +219,6 @@ GSRX  ;exit with valid character
 ; C=0,  V=0 => not escaped,  V=1 => escaped
  RTS
 
-
-
-BADSTR
- BRK ;report error 'Bad string'
- = BADST
- = "Bad string"
- = ZERO ;end of message
 
 
 SHIFT  ;perform shift inversion
@@ -318,22 +337,6 @@ TV  ;alter TV characteristics
  LDY INTERL ;Y := old state
  STA INTERL ;interlace invert
 BREAK0
- RTS
-
-
-WFRED
- TYA
- STAAX FRED
- RTS
-
-WJIM
- TYA
- STAAX JIM
- RTS
-
-WSHEIL
- TYA
- STAAX SHEIL
  RTS
 
 

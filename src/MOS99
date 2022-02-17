@@ -173,124 +173,69 @@ ROMCNP
 
  JSR OSROM
 
-OSROM  ;call routine in paged ROM
-; This routine zaps the stack a great deal.
-;
-; current state of stack is:
-; 2  hi-byte return address (ignored)
-;    [will be used for final PLP prior to return to caller]
-; 1  lo-byte return address => which ROM vector to use
-;    (this is of the form 3*n+2, n=0,1,2...)
-;    [will be used for final PLA prior to return to caller]
- PHA ;make room for current ROMid
+ % 21 ;21 bytes padding
 
- PHA ;make room for ...
- PHA ;... return link to OSROM2
+FXBPUT  ;FX entry, C=1
+ TXA ;A = character
+ BCS OSBPUT ;[ALWAYS jump]
 
- PHA ;make room for ...
- PHA ;... interrupt return address ...
- PHP ;... to enter paged ROM with status as on entry
-
- PHA ;save A
- TXA
- PHA ;save X
- TYA
- PHA ;save Y
-
-; stack currently looks like:
-; 11  future PLP stored after return from paged ROM
-; 10  future PLA restoring A after using A to restore ROM status
-;  9  will hold current ROMid
-;
-;  8  return link ...
-;  7  ... to OSROM2
-;
-;  6  interrupt state ...
-;  5  ... to enter ...
-;  4  ... at paged ROM address
-;
-;  3  A on entry
-;  2  X on entry
-;  1  Y on entry
- TSX ;prepare to fudge stack
-; fudge return from paged ROM to OSROM2
- LDAIM /(OSROM2-&01 )
- STAAX &0108
- LDAIM OSROM2-&01
- STAAX &0107
-; fudge paged ROM entry address
- LDYAX &010A ;Y -> indirection vector
- LDAAY ROMVEC-&02+&00 ;routine address lo-byte
- STAAX &0105
- LDAAY ROMVEC-&02+&01 ;routine address hi-byte
- STAAX &0106
-; deal with swopping of ROMs
- LDA ROMID
- STAAX &0109 ;save current ROMid
- LDAAY ROMVEC-&02+&02 ;routine paged ROMid
- STA ROMID
- STA ROM
-; restore registers
- PLA
- TAY
- PLA
- TAX
- PLA
- RTI ;enter paged ROM at specified address
-OSROM2  ;routine will return here
+FUDGE PHA
+ PHA
  PHP
  PHA
  TXA
  PHA
-; stack looks like:
-; 6  slot for final PLP
-; 5  slot for final PLA
-; 4  previous ROMid
-; 3  processor status upon return from paged ROM
-; 2  A
-; 1  X
- TSX
- LDAAX &0102
- STAAX &0105 ;move A down stack
- LDAAX &0103
- STAAX &0106 ;move P down stack
-; restore X
- PLA
- TAX
-; purge A and P from stack
- PLA
- PLA
-; restore previous ROMid
- PLA
+ TYA
+ PHA
+ TSX ;y  x  a  p  a  a  88 FF el eh cl ch
+ LDYAX &0109 ;get vector offset+2
+ LDAAY ROMVEC-&02+&00
+ STAAX &0105 ;copy LSB vector over placeholder
+ LDAAY ROMVEC-&02+&01
+ STAAX &0106 ;copy MSB vector over placeholder
+ LDA ROMID ;copy ROM slot over MSB vector offset
+ STAAX &010A ;y  x  a  p  vl vh 88 FF el r  cl ch
+ PLA ;Y in A ready to restore
+ LDXAY ROMVEC-&02+&02 ;get vector ROM slot
+ TAY ;restore Y
+ PLA ;X in A ready to restore
+ JSR STXROM ;set destination ROM slot
+ TAX ;restore X
+ PLA ;restore A
+ RTI ;restore P and jump to vector
+
+OSROM JSR FUDGE ;push restore address on stack, RTS returns below
+;routine to restore ROM slot from indirection
+ PHP
+ PHA
+ TXA
+ PHA
+ TSX ;x  a  p  el r  cl ch
+ LDAAX &0105
  STA ROMID
- STA ROM
-; return to caller restoring P to that upon return from paged ROM
+ STA ROM ;restore ROM slot
+ LDAAX &0103
+ STAAX &0104
+ STAAX &0105 ;copy status over vec offset and ROM slot
  PLA
+ TAX ;restore X
+ PLA ;restore A
  PLP
+ PLP
+ PLP ;restore status (and discard 2 copies)
+VINUSE ;target of vectors in use by a client waiting for a server
+ NOP
 DEFEVT  ;default EVENT routine
 DEFUPT  ;default user print routine (simulate printer busy)
 DEFNET  ;default net routine (simulate printer busy)
 RTS
  RTS
 
-
-FXBPUT  ;FX entry, C=1
- TXA ;A = character
- BCS OSBPUT ;[ALWAYS jump]
+ ;FXBPUT gives up its place to OSWRSC
+ ;to keep VINUSE and RTS in the same place as OS 1.25
 
 
-RFRED
- LDYAX FRED
- RTS
-
-RJIM
- LDYAX JIM
- RTS
-
-RSHEIL
- LDYAX SHEIL
- RTS
-
+OSWRSC JMP WRSC
 
 ; security copy of indirection data
  = VLEN

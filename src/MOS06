@@ -139,6 +139,7 @@ PLOTEX RTS
 PLOTFF LDAIY ZMEMG ;Plots a full byte
  ORA ZGORA
  EOR ZGEOR
+WRSC
  STAIY ZMEMG
  RTS
 
@@ -266,6 +267,7 @@ DIVAXT LDAAX V+&03 ;Signed division by 2
  RTS
 
 ;IEG Inverse of EIG. Converts Icursor to Ecursor
+;Can't inline in MOS02, snaps branches
 
 IEG LDYIM GCSR-V ;Copy GCSIY to GCSY
  JSR COPYFB
@@ -273,17 +275,17 @@ IEG LDYIM GCSR-V ;Copy GCSIY to GCSY
  LDYIM &02 ;by multiplying by 4
  JSR IEGC
  LDXIM &00 ;Convert x co-ordinates
- LDYIM &04 ;By multiplying by 2
+ LDYIM &05 ;By multiplying by 2
  LDA NPIX ;4, or 8, depending on (NPIX)
 IEGA DEY
  LSRA
  BNE IEGA
  LDA MEMODE ;Get memory map type
- BEQ IEGC ;=1 if 10K mode
- INY  ;in which case, multiply by another factor of two & fall through to ...
+ BEQ IEGE ;=0 if 20K mode in which case skip one multiplication
 
 IEGC ASLAX GCSR
  ROLAX GCSR+&01
+IEGE
  DEY
  BNE IEGC
  SEC  ;Now subtract off origin to give external co-ordinate

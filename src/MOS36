@@ -82,18 +82,6 @@ BRK
  CLI
  JMI BRKVEC ;process BRK, N.B. default is DEFBRK
 ;
-DEFBRK  ;default BRK routine outputs error message
-; assume still decimal mode
- LDYIM ZERO
- JSR WRSTR1 ;output error message
-; check whether within auto-boot program
- LDA QUIET
- RORA
-STOP
- BCS STOP ;hang if not within auto-boot program
- JSR OSNEWL
- JSR OSNEWL ;place 2*CR/LF after error message
- JMP EBRK ;system continue
 
 
 

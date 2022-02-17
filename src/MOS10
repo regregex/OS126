@@ -248,17 +248,18 @@ ULNA SEC  ;L := L - MOD(DeltaX)
  SBCAX V+&03
  STAAX V+&01
  BPL ULNB ;+ve?, then skip the move X part following
-ULNF LDAAX V+&0A ;Move X, which direction ?
+ULNF CLC
+ LDAAX V+&0A ;Move X, which direction ?
  BMI ULNC ;Skip if move left
  INCAX V+&06 ;Move right, therefore increment the X value
  BNE ULND
  INCAX V+&07
- JMP ULND
+ BCC ULND ;always branch
 ULNC LDAAX V+&06 ;Move left, therefore decrement X value
  BNE ULNE
  DECAX V+&07
 ULNE DECAX V+&06
-ULND CLC  ;L := L + MOD DeltaY
+ULND ;L := L + MOD DeltaY
  LDAAX V
  ADCAX V+&04
  STAAX V

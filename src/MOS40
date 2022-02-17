@@ -50,27 +50,40 @@ CLRFB  ;clear file control block
  STAAX FBLOCK +&03
  PLA
  RTS
-ROL4  ;rotate hex digit into 4-byte address
- STY FILEY
+LSA JSR SKIPSP
+ JSR TSTHEX
+ BCC LSA0 ;[hex not present, return V=1]
+;
+; clear field
+;
+ JSR CLRFB
+;
+; read address
+;
+LSA1 ;rotate hex digit into 4-byte address
 ; move nibble into high nibble
+;set b3, clear b2..0
+ SEC
  ROLA
- ROLA
- ROLA
- ROLA
- LDYIM &04
+ ASLA
+ ASLA
+ ASLA
+;shift once more. C=hex b3, A b4=1, b3..0=0
+ ASLA
 ROL4A  ;rotate bit into address
- ROLA ;C=bit
  ROLAX FBLOCK
  ROLAX FBLOCK +&01
  ROLAX FBLOCK +&02
  ROLAX FBLOCK +&03
  BCS MBADHX ;[overflow]
 ; C=0
- DEY
+ ASLA
  BNE ROL4A ;execute loop four times
-; C=0
- LDY FILEY
-; C=0
+; C=1 which TSTHEX ignores
+ JSR TSTHEX
+ BCS LSA1
+ SEC ;return C=1
+LSA0  ;Z=1 => CR terminator
  RTS
 
 
@@ -165,23 +178,6 @@ LS0  ;load file
  PLA
  JMP OSFILE
 ;
-LSA JSR SKIPSP
- JSR TSTHEX
- BCC LSA0 ;[hex not present, return V=1]
-;
-; clear field
-;
- JSR CLRFB
-;
-; read address
-;
-LSA1 JSR ROL4
- JSR TSTHEX
- BCS LSA1
- SEC ;return C=1
-LSA0  ;Z=1 => CR terminator
- RTS
-;
 ;
 SAVEX  ;SAVE command
 ;
@@ -252,40 +248,6 @@ BADKEY BRK ;report error 'Bad KEY' / end of preceeding error message
  = ZERO ;message terminator
 
 
-KEY  ;KEY <number> <string_value>
- JSR GETNUM
- BCC BADKEY ;[bad soft key number (>255)]
-; A = character delimiting number
-; X = NUMBER = CSKEY = key number
-; Y = soft key number argument
-; check soft key number range
- CPXIM NSOFTK
- BCS BADKEY ;[soft_key_number > number of soft keys - 1]
-; key number in range 0 to NSOFTK-1
-;
- [ FALSE=0
-; **** NO LONGER NECESSARY AS NUMBER SHARED WITH CSKEY ****
- STX CSKEY ;CSKEY := soft key number
- ]
-;
- JSR SKPCOM ;skip optional spaces and an optional comma
- PHP ;save line end status
- LDX SKEND ;Y points to unused portion of soft key buffer area
-; (set to reset SKNEND as it might have been set as a result
-; of a 'KEY in use' error)
- TYA
- PHA
- JSR SKGCR ;delete soft key (uses value in X)
-; on exit X = SKEND
- PLA
- TAY
- PLP ;restore line end status
- BNE CLI1 ;[not end of line]
-; end of line - specified soft key value value has been deleted so return
- RTS
-
-
-
 FX  ;*FX x,y
  JSR GETNUM ;read FX function code
  BCC BADFX ;[bad FX number]
@@ -339,9 +301,39 @@ FX1
  PLA
  JSR OSBYTE
  BVS BADFX ;[unrecognised FX code]
+KEYZAP
  RTS
 
 
+KEY  ;KEY <number> <string_value>
+ JSR GETNUM
+ BCC BADKEY ;[bad soft key number (>255)]
+; A = character delimiting number
+; X = NUMBER = CSKEY = key number
+; Y = soft key number argument
+; check soft key number range
+ CPXIM NSOFTK
+ BCS BADKEY ;[soft_key_number > number of soft keys - 1]
+; key number in range 0 to NSOFTK-1
+;
+ [ FALSE=0
+; **** NO LONGER NECESSARY AS NUMBER SHARED WITH CSKEY ****
+ STX CSKEY ;CSKEY := soft key number
+ ]
+;
+ JSR SKPCOM ;skip optional spaces and an optional comma
+ PHP ;save line end status
+ LDX SKEND ;Y points to unused portion of soft key buffer area
+; (set to reset SKNEND as it might have been set as a result
+; of a 'KEY in use' error)
+ TYA
+ PHA
+ JSR SKGCR ;delete soft key (uses value in X)
+; on exit X = SKEND
+ PLA
+ TAY
+ PLP ;restore line end status
+ BEQ KEYZAP ; end of line - specified soft key value value has been deleted so return
 CLI1
  SEC
  JSR GSINTS ;initialise for reading quoted string

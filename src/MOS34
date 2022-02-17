@@ -64,22 +64,32 @@ HRDRST  ;hard reset
 ; hard reset
 ; clear store
  LDXIM &04 ;start clearing at page 4
- STX &0001
- STA &0000
  TAY ;Y := 0
+ STA &0000
+CLRPG
+ STX &0001
+ STAIY &0000
+ CPX &0001
+ BNE CLEAR0 ;[16K RAM]
 ; clear store to $00 (no blobs on screen)
+ TAY
+ BEQ CLEARA ;branch always
 CLEAR
  STAIY &0000
- CMP &0001
- BEQ CLEAR0 ;[16K RAM]
+CLEARA
+ INY
+ STAIY &0000 ;saves 24 ms
+ INY
+ STAIY &0000 ;saves 8 ms
+ INY
+ STAIY &0000 ;saves 4 ms
  INY
  BNE CLEAR
 ; Y=0
  INY
 ; Y=1
  INX
- INC &0001
- BPL CLEAR
+ BPL CLRPG
 ; 32K RAM
 ;
 CLEAR0
@@ -88,7 +98,8 @@ CLEAR0
 ;
 ; force soft keys reset
  STX USKFLG ;USKFLG := non-zero
-;
+
+;  
 SFTRST
 ;
 ; initialise addressable latch outputs hi
@@ -163,8 +174,10 @@ SOFT
  LDAIM ZERO
 IP0SX
  CPXIM FFBYTE
- BCC Z0BYTE
+ BNE Z0BYTE
  LDAIM &FF
+ STA SSEMA
+ LDXIM PFLAG
 Z0BYTE
  STAAX &0200
  INX
@@ -522,8 +535,8 @@ ENTER  ;initialise TAPE/DISC
 ; test for auto-boot condition (SHIFT and startup option bit3)
 ;
  JSR MOSTST ;test shift
- PHP
- PLA ;b7(A) => SHIFT pressed
+ ;Slightly iffy using A directly as no other callers of MOSTST do
+ ;however MOSTST always returns SHIFT state in both N and A b7
  LSRA
  LSRA
  LSRA
@@ -553,6 +566,26 @@ ENTER  ;initialise TAPE/DISC
 ; then the MOS jumps to EBRK (early BRK)
  BNE DNRFS ;[ALWAYS jump, do not reset filing system]
 ;
+;Restoring OS 1.20 behaviour:
+;*FX215,0 by early birds (or *FX215,255 by RFS !BOOT)
+;forces *TAPE12 on successful completion of RFS !BOOT
+;with no error message printed
+ BEQ NOAUTO
+;NEVER fall through
+
+DEFBRK  ;default BRK routine outputs error message
+; assume still decimal mode
+ LDYIM ZERO
+ JSR WRSTR1 ;output error message
+; check whether within auto-boot program
+ LDA QUIET
+ RORA
+STOP
+ BCS STOP ;hang if not within auto-boot program
+ JSR OSNEWL
+ JSR OSNEWL ;place 2*CR/LF after error message
+;fall through
+
 NOAUTO
 EBRK  ;unexpected (early) BRK (e.g. 'File not found')
 ;
@@ -569,6 +602,7 @@ SLANG  ;select a language ROM to enter
  BNE SLANG1 ;[hard restart - use same language as last time]
 ;
 ; soft restart - ensure language exists
+; A b0=0 used by ILR2 enter ROM with C=0
 ;
  LDX LROMID
  BPL ILR2 ;[language does exist]
@@ -578,7 +612,7 @@ SLANG1  ;find first language ROM
  LDXIM NROM-&1
 ILR1
  LDAAX ROMS
- ROLA
+ ASLA ;b0=0 used by ILR2 enter ROM with C=0
  BMI ILR2 ;[found language ROM]
 ;
  DEX
@@ -593,8 +627,8 @@ ILR1
  = "Language?"
  = ZERO
 ;
-ILR2
- CLC ;indicate to tube that this is a restart
+ILR2 ;*BASIC enters with A b0=1 indicate manual entry
+ LSRA ;C=0 indicate to tube that this is a restart
 SELANG  ;FX entry point, entered with C=1 (for tube)
 ; found language ROM
 ; select language ROM

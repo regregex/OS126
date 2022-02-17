@@ -31,7 +31,10 @@ NOTCEA CMPIM &7F ;No?, then form vector
  BMI NOTC20 ;Yes, then print it if print module on
  JSR VDUPR ;No?, then print to VDU
  JSR HT
-NOTC20 JMP CSWDEX ;& ditto
+NOTC20 ;A dead
+ LDA STATS
+ LSRA ;C=1 if printer module on
+ BPL CSWDEX ;& ditto
 
 ISDEL LDAIM &20 ;(Form correct index for DEL)
 
@@ -53,7 +56,7 @@ NOTDEL TAY
  STA JVEC +&01
  BIT STATS ;Swap back again if C.E.
  BVS NOTC10
- CLC
+;adcim codorg never overflows (here...), C=0
 ACK RTS  ;NUL points at this to save a byte
 
 
@@ -84,17 +87,20 @@ SOH TAX ;Yes, then (A)=Byte to be printed
  LSRA
  BCC ACK
  TXA
+ CLC ;C=0, prevent second printing; PRINT preserves flags
  JMP PRINT ;print character and return, setting c=0 (done by MOS)
 
-REXEC
+REXEC ;starting +2 from NOTC20; 1 spare byte
  STA JVEC +&01
- TYA  ;Is it range $08 to $0D ? (no longer include bell)
- CMPIM &08
- BCC REXECZ ;Set c if so
+ LDA STATS
+ RORA ;Is printer module on?
+ TYA  ;AND Is it range $08 to $0D ? (no longer include bell)
+ RORA ;+4 = +6
+ CMPIM &84
  EORIM &FF
- CMPIM &F2
- EORIM &FF
-REXECZ
+ RORA
+ ADCIM &43
+ TYA ;-2 = +4
 ;
  BIT STATS ;Execute routine - are we disabled ?
  BMI ACKQ ;Was it an ACK? (can't be an SOH cos she queues)
@@ -102,10 +108,8 @@ REXECZ
  PHP  ;and push c
  JSR RUNNER ;Do the routine
  PLP
- BCC REXECB ;Not in range 8 to $D, so not don't print it
-CSWDEX LDA STATS ;Is printer module on?
- LSRA  ;c=1 if so
-REXECB BIT STATS ;Following preserves c
+CSWDEX ;enter with C=printer module on ;-5 = -1; 4 spare bytes
+ BIT STATS ;Following preserves c
  BVC ACK ;Not C.E. so exit
 REXE10 JSR OCSRWR ;Write output cursor
 

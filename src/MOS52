@@ -71,14 +71,14 @@ UPATN  ;update attenuation
  LDAIM &C0 ;force minimum attenuation
 NOISY
 ;
- SEC
- SBCIM &40 ;convert signed to unsigned number
+ ; in:   x ~b3  b2  b1  b0   x   x   x
+ ;out:  c2  c1  c0   1 ~b3 ~b2 ~b1 ~b0
  LSRA
  LSRA
- LSRA  ;shift top four bits into low nibble
- EORIM &0F ;invert for correct output
- ORAAX CHAN ;add channel specification
- ORAIM &10 ;select odd register (attenuation)
+ LSRA
+ ORAAX CHAN
+ ANDIM &EF
+ EORIM &17
 ;fall into the send routine
 SNDOUT
 SEND
@@ -152,16 +152,15 @@ MAN12
  BNE HENDS ;[not time for new envelope tick]
 MAN11
  LDYAX ENVLP ;get envelope offset into Y
- CPYIM &FF 
+ INY
  BEQ HENDS
- LDAAY ENV ;get first envelope parameter
+ LDAAY ENV-&01 ;get first envelope parameter
  ANDIM &7F ;mask off sweep repeat bit
  STAAX SCONT ;set up scaling counter again
  LDAAX EPERD ;envelope period
  CMPIM &04 ;check for 'finished' period
  BEQ ENDEV ;[no longer in middle of envelope]
 ;
- LDAAX EPERD
  CLC
  ADCAX ENVLP ;get offset to current amplitude envelope parameters
  TAY  ;ENV+7,Y now point to attninc rate and sENV+11 to attnlevel
@@ -213,11 +212,11 @@ ENDEV
  LDAAX NPERD
  CMPIM &03
  BEQ ENDSW
- LDAAX NCONT ;number of ticks left in this frequency period
+ LDYAX NCONT ;number of ticks left in this frequency period
  BNE GTPRD
  INCAX NPERD ;next period
- LDAAX NPERD
- CMPIM &03 ;check for period=3 =>end of all periods
+ CMPIM &03-&01 ;check for period=3 =>end of all periods
+ SEC ;A=next period - 1, increment it before forming pointer
  BNE NTLF ;[not last period]
  LDYAX ENVLP ;the following checks for bit 8 set in the first envelope byte=> no sweep repeat
  LDAAY ENV
@@ -225,9 +224,9 @@ ENDEV
  LDAIM ZERO
  STAAX NTADD ;reset amount added to note to zero for next sweep
  STAAX NPERD ;first sweep period
+ CLC ;A=next period, do not adjust
 NTLF
- LDAAX NPERD ;the following points Y to the sweep parameters of the current envelope/period
- CLC
+ ;the following points Y to the sweep parameters of the current envelope/period
  ADCAX ENVLP
  TAY
  LDAAY ENV+&04
@@ -331,7 +330,7 @@ NOGO2
  PLP
 NOTGO
  LDYAX ENVLP
- CPYIM &FF
+ INY
  BNE PROG
  JSR MINATN ;update attenuation of box envelopes
 PROG
@@ -372,7 +371,7 @@ FCNVRT   ;force note output
  ANDIM &0F ;noise input is only 4 bits
  ORAAX CHAN ;add channel information
  PHP  ;push P (will immediately be pulled)
- JMP CDONE ;output and return
+ BCS CDONE ;output and return
 TONE   ;tone channel
  PHA
  ANDIM &03
@@ -453,12 +452,11 @@ STRNT
  PHP  ;start indivisible section to stop new
  SEI  ;note being added to queue half way through extraction
  JSR REMOV ;get byte at head queue
- PHA ;save byte at head queue
+ TAY ;save byte at head queue
  ANDIM &04 ;extract 'continue' bit
  BEQ NOCONT ;[not continue]
- PLA
  LDYAX ENVLP ;must check for continue to auto envelope
- CPYIM &FF
+ INY
  BNE SCON1
  JSR MINATN ;update attenuation
 SCON1
@@ -467,7 +465,7 @@ SCON1
  PLP  ;end of indivisible section
  JMP DODUR  ;jump to continue update duration
 NOCONT
- PLA   ;restore header byte
+ TYA   ;restore header byte
  ANDIM &F8 ;extract 5 envelope bits
  ASLA  ;programmable envelope select bit >carry
  BCC PENV ;[programmed envelope]
@@ -483,7 +481,7 @@ PENV
  STAAX DRDIV
  LDAIM &01
  STAAX SCONT ;first envelope update next tick
- LDAIM ZERO
+ LSRA
  STAAX NCONT
  STAAX EPERD ;first amplittude envelope
  STAAX NTADD ;note add envelope starts at 0

@@ -25,13 +25,12 @@ READCH
  LDY NCOLOR ;Is it TTX?
  BNE READCE
  LDAIY ZMEMT ;Yes, then read character direct (Y=0)
- LDYIM &02 ;Look for characters to be swapped
-RDTTXA CMPAY TTXTB+&01 ;Is it one of them?
+ LDYIM &03 ;Look for characters to be swapped
+RDTTXZ DEY
+ BMI READKE
+ CMPAY TTXTB+&01 ;Is it one of them?
  BNE RDTTXZ
  LDAAY TTXTB ;Cheat in reverse order (see PTTX)
- DEY ;ensure no further exchange
-RDTTXZ DEY
- BPL RDTTXA
 READKE LDY MODE ;Only way of getting the mode
  TAX
  RTS
@@ -40,6 +39,7 @@ READKE LDY MODE ;Only way of getting the mode
 READCE JSR PTCNV ;Get the bit pattern to READWS
  LDXIM &20 ;First character to be checked
 READKF TXA  ;Address charcter
+ BEQ READKE ;Finished search?
  PHA
  JSR CHADDR ;Result to ZTEMPC
  PLA
@@ -59,9 +59,7 @@ READKC INX  ;Next character up
  ADCIM &08
  STA ZTEMPC
  BNE READKA ;More on this page?
- TXA ;Finished search?
- BNE READKF ;No?, then try next page
- BEQ READKE ;(branch always taken)
+ BEQ READKF ;(branch always taken)
 
 ;Converts the 8,16 or 32 byte character on the screen to an 8 byte
 ;bit pattern in Q .. Q+07. Not very fast, in particular, the 8 byte

@@ -20,6 +20,26 @@ CFSOPT TXA
 
 OPTERR JMP MBDCMD
 
+RECORD
+
+ LDA SROMSW
+ BNE OPTERR ;OK if not in SFS
+ JSR MOTONW ;Motor ON for OUTPUT
+ JSR BUGFIX
+ JSR MSGON
+ BEQ RECEXX
+
+ JSR MSGOUT ;If messages ON, prompt
+ = "RECORD then RETURN"
+ = &00
+
+GETCR1 JSR ESCAPE
+ JSR OSRDCH
+ CMPIM MCR
+ BNE GETCR1
+ JMP OSNEWL
+
+
 MSGS LDAIM MSGMSK
  INY
  INY
@@ -31,6 +51,7 @@ XSETFLG INY
  AND OPTS
 SETFL1 ORAAY OPTTAB
  STA OPTS
+RECEXX
  RTS
 
 SETGAP TYA
@@ -59,6 +80,7 @@ IRUPT
  DEC IFLAG
  LDA SROMSW ;Is SFS active ?
  BEQ NOTSPK ;Nope
+ ;GoMMC tape patch has F58D NOP;NOP
 
  JSR RDSPCH ;Yes, get next byte from ROM
  TAY
@@ -454,6 +476,7 @@ RDHEAD
 
  LDA SROMSW
  BEQ RDHDL2 ;SFS not enabled, carry on
+ ;GoMMC tape patch has F77E NOP;NOP
 
 ;Here, SFS enabled, so read first char
 ;(assumed to be "*") and go on to read
@@ -479,6 +502,7 @@ RDHDL5 JSR SRNEXT
 ;Carry set => end of filing system, so
 ;indicate to outside world in V flag
  CLV
+RDHDXX
  RTS
 
 ;Note assumed exit with Y = 0
@@ -491,6 +515,7 @@ RDHDL5 JSR SRNEXT
 CASIN
  LDA SROMSW ;is SFS on ?
  BEQ CASIN1 ;Nope, read from tape
+ ;GoMMC tape patch has F79A NOP;NOP
 
 ;Force a read from ROM & set IRUPT flag
 
@@ -519,36 +544,31 @@ CASIN1 JSR IWAIT
  PLP
  ]
 
-
+;Can't move to MOS05 to branch to OCSREX, fallthrough from CASIN1!
 ADDCRC PHP
  PHA
 
-CCITTL * &10
-CCITTH * &08
+CCITTL * &21
+CCITTH * &10
 
- SEC
- ROR CRCCNT
  EOR CHKSUM +&01
- STA CHKSUM +&01
-CRC1 LDA CHKSUM +&01
+ SEC
+ ROR CHKSUM +&01
+CRC1 ASL CHKSUM
  ROLA
  BCC CRC2
- RORA
- EORIM CCITTH
- STA CHKSUM +&01
+ PHA
  LDA CHKSUM
  EORIM CCITTL
  STA CHKSUM
- SEC
-CRC2
-
- ROL CHKSUM
- ROL CHKSUM +&01
- LSR CRCCNT
+ PLA
+ EORIM CCITTH
+CRC2 LSR CHKSUM +&01
  BNE CRC1
+ STA CHKSUM +&01
  PLA
  PLP
-RDHDXX RTS
+ RTS
 
 
 
@@ -759,6 +779,13 @@ PRTHDR
 ;Expects block info to be in INFO.
 
 
+ ;Set FSIZE here for correct OSFILE block whether messages on/off
+ LDA INFO +BKSZEL
+ STA FSIZE
+ LDA INFO +BKNOLO
+ CLC
+ ADC INFO +BKSZEH
+ STA FSIZE + 1
  LDA INFO +BKNOLO
  ORA INFO +BKNOHI
  BEQ PRTHL8 ;If first block, is new file
@@ -819,17 +846,9 @@ PRTHLF JSR PRTSP
 
 ;Here, is last block -> print total length
 
- TXA  ;X set at PRTHLA
- CLC
- ADC INFO +BKSZEH ;Gross huh ?
- [ LENSW=0
- STA FSIZE + 1 ;Store for load to modify OSFILE block
- ]
+ LDA FSIZE + 1
  JSR WSPHEX
- LDA INFO +BKSZEL
- [ LENSW=0
- STA FSIZE ;Store for load to modify OSFILE block
- ]
+ LDA FSIZE
  JSR WHEX
 
  BIT USFLGS
@@ -854,34 +873,9 @@ PRTHLU LDAAX INFO
  DEY
  BNE PRTHLU
 
-RECEXX
 PRTHLX RTS
 
 
 
 
-RECORD
-
- LDA SROMSW
- BEQ RECRD2 ;OK if not in SFS
- JMP MBDCMD ;Otherwise bad command
-
-RECRD2
- JSR MOTONW ;Motor ON for OUTPUT
- JSR BUGFIX
- JSR MSGON
- BEQ RECEXX
-
- JSR MSGOUT ;If messages ON, prompt
- = "RECORD then RETURN"
- = &00
-
-GETCR1 JSR ESCAPE
- JSR OSRDCH
- CMPIM MCR
- BNE GETCR1
- JMP OSNEWL
-
-
  LNK MOS76
-

@@ -124,11 +124,10 @@ NEGAY PHA  ;Negate (AY) - push MSB
  TAY
  PLA
  EORIM &FF
+ CPYIM &FF
  INY
- BNE NEGAYA
- CLC
- ADCIM &01
-NEGAYA RTS
+ ADCIM &00
+ RTS
 
 SPF JSR GADDW ;Address new point COMMON CODE
  BNE SPFA ;Off window?, then exit
@@ -246,10 +245,9 @@ SPAF LDA ZMASK ;START HERE
  PHP ;Invert z flag if needs be
  PLA
  EOR ZTEMPB ;By inverting it with ZTEMPB (0 or 2)
- PHA
- PLP
+ ANDIM &02 ;No shorter but saves 5 cycles and ZTEMPB can't corrupt PSR
 
- BEQ SPAA ;Try next pixel if you haven't found what you're looking for
+ BNE SPAA ;Z now inverted, NE means NOT background, so loop
  PLA ;Found it?, then pull combined mask
  EOR ZMASK ;& delete this pixel from it
 SPAE STA ZMASK ;These must preserve c!

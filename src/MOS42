@@ -199,14 +199,15 @@ REMOV1  ;return with C=1 => insert/remove failed due to buffer full/empty
 CAPS  ;test for an uppercase letter
 
  PHA
+;Must preserve V during LOADGO->SRCH0->LOOK->CMPFT->CAPS
+;ANDIM &DF;CMPIM "A";EORIM &FF;RORA;ADCIM "Z":SHR:1
+;ORAIM &20;CMPIM "z"+&01;EORIM &FF;RORA;ADCIM ("a":SHR:1):OR:&80
  ANDIM &DF
- CMPIM "A"
- BCC CAPSC1 ;[fail]
  CMPIM "Z"+&01
- BCC CAPSX ;[succeed]
-CAPSC1  ;set C=1 and exit
- SEC
-CAPSX  ;exit
+ BCS CAPSX
+ EORIM &FF
+ CMPIM "A"-&01:EOR:&FF
+CAPSX
  PLA
 ; C=0 => Pass,  C=1 => Fail
  RTS

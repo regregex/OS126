@@ -80,8 +80,7 @@ SVOP1
  BPL SVOP2 ;[not a service ROM]
  ]
 ; found a service ROM
- STX ROMID
- STX ROM
+ JSR STXROM
 ; call service routine
  JSR ROMSFT ;initialise service ROM
  TAX
@@ -130,16 +129,6 @@ INTRTS RTS
  TTL C.F.S Main Routines - FSFUNC
  OPT &01
 
-JMPTAB
- & CFSOPT-&01
- & CFSEOF-&01
- & RUN-&01 ;"*.<string>"
- & MBDCMD-&01 ;"*<string>" = Bad command
- & RUN-&01 ;"*RUN <string>"
- & CAT-&01
- & SHUTES-&01 ;die
-NOTAB * .-JMPTAB:SHR: 1
-
 FSFUNC
 
 ;File system operation entry pt.
@@ -148,9 +137,8 @@ FSFUNC
  BCS INTRTS ;Check call legal otherwise, exit
 
  STX TEMP
- ASLA
  TAX  ;Get address from table
- LDAAX JMPTAB +&01
+ LDAAX JMPTAB +NOTAB
  PHA ;push hi byte
  LDAAX JMPTAB
  PHA ;push lo byte
@@ -171,123 +159,6 @@ FSFUNC
 ;Differentiating between these is necessary
 ;so that the protection bit in the flags
 ;byte can be checked.
-
-
-LOADGO
-
- PHP  ;Store interrupt status
- PHA ;Store indication of load or load/run
- JSR SETDEF ;Set defaults if nesc.
-
- LDA INFO +BKEXEC
- PHA  ;EQ=> use addr. from C.line or OSFILE
-
- JSR SRCH0 ;Find file on tape.
-LOADL6
-
- PLA
- BEQ LOADLB ;Use load address from command line or OSFILE
-
-;Move load address from OSFILE command block
-;and check if is $FFFFFFFF, in which case
-;give BAD ADDRESS error
-
- LDXIM &03
- LDAIM &FF
-LOADL1 PHA  ;Push cumulative AND of address
- LDAAX INFO +BKLOAD ;Address from command block
- STAAX BKADDR
- PLA
- ANDAX BKADDR
- DEX
- BPL LOADL1
-
- CMPIM &FF ;If $FF, all bytes are $FF => error
- BNE LOADLB ;Continue load
-
- JSR BEEPOF ;Motor off/beep
- JMP MBADHX
-
-LOADLB LDA INFO +BKFLAG ;Check protection bit
- LSRA  ;CS -> prot. CC -> unprot
- PLA  ;Check if loading and running
- BEQ LOADLC ;Yes => carry on
- BCC LOADLA ;Not protected -> carry on
-
-PROTER JSR CASMOF ;Turn motor off
-;Also called from RDBFER
-
- BRK
- = CFSERL
- = "Locked"
- = &00
-
-LOADLC
- BCC LOADLA ;Loading/running & unprotected
- LDAIM &03
- STA CRIT ;Loading/running & prot., so disable ESCAPE and trap BREAK
-LOADLA
- LDAIM NIGBIT
- AND USFLGS
- BEQ LOADL8 ;If ignore set, just read block
- LDA HDRCRC ;Check hdr. checksum
-
-;Don't start bg job if header CRC is no good,
-;otherwise data may be loaded somewhere strange
-
- BNE LOADL7
-LOADL8 TYA
- PHA ;Store "Loading" flag
- JSR TWINIT ;Initialise tube for writing if nesc.
- PLA
- TAY ;Restore "Loading" flag
- JSR RDBLOK
-LOADL7 JSR LODHDR ;Print header and error msgs.
- BNE LODRTR ;=> retry
-
- JSR NXTBLK ;Next block := blk. found + 1
- BIT INFO +BKFLAG
- BMI LOADEX ;Just loaded last block => finish
-
- JSR ADDBKA ;Add block size to BKADDR
-
- JSR RDHEAD
- BNE LOADLA ;Always jump
-
-LOADEX
- [ LENSW =0;Alter OSFILE control block
- LDYIM &0A ;Length offset in OSFILE block
- LDA FSIZE ;File size set in PRTHDR
- STAIY GENPTR ;Note GENPTR kept from OSFILE
- INY
- LDA FSIZE + 1
- STAIY GENPTR
- LDAIM &00 ;Set high bytes of length = 0
- INY
- STAIY GENPTR
- INY
- STAIY GENPTR
- ]
-
- PLP  ;Restore interrupt status
-
-FINOP
-
- JSR BEEPOF ;Motor OFF/BEEP
-
-NOOLN1 BIT ERRSW ;If error taken place, already new line
- BMI FINOPX
-NOOLIN PHP
- JSR MSGOUT
- = MCR
- = &00 ;Print new line if msgs on
- PLP
-FINOPX RTS
-
-
-LODRTR JSR SEARCH ;Search for current block (BLOKNO)
- BNE LOADLA ;Try and reload data
-
 
 
  TTL C.F.S. Main Routines - FILEGO
@@ -352,10 +223,7 @@ FILELP LDAIY GENPTR
  BNE FILELP
 
  PLA
- BEQ FILEL2
- CMPIM &FF
- BNE FINOPX ;If not Load -> return
- JMP LOADGO ;Else so load
+ BNE FILENE
 
 ;Now doing save
 
@@ -396,8 +264,8 @@ FILEL3 LDAIY GENPTR
 
 SAVELP SEC
  LDXIM &FD
-SAVEL1 LDAAX HIADDR -&FD
- SBCAX BKADDR -&FD
+SAVEL1 LDAZX (HIADDR -&FD):AND:&FF
+ SBCZX (BKADDR -&FD):AND:&FF
  STAAX INFO +BKSZEL-&FD ;Note corrupts Flags byte
  INX
  BNE SAVEL1 ;Do HIADDR - BKADDR
@@ -431,6 +299,125 @@ SAVEL3 STX INFO +BKFLAG
  INC INFO +BKNOHI ;Inc. block no. for next time
  BNE SAVELP ;Assumed always +ve
 
+FILENE CMPIM &FF
+ BEQ LOADGO
+SAVFIN  ;Exit from SAVE
+ RTS
+
+LOADGO
+
+ PHP  ;Store interrupt status
+ PHA ;Store indication of load or load/run
+ JSR SETDEF ;Set defaults if nesc.
+
+ LDA INFO +BKEXEC
+ PHA  ;EQ=> use addr. from C.line or OSFILE
+
+ JSR SRCH0 ;Find file on tape.
+LOADL6
+
+ PLA
+ BEQ LOADLB ;Use load address from command line or OSFILE
+
+;Move load address from OSFILE command block
+;and check if is $FFFFFFFF, in which case
+;give BAD ADDRESS error
+
+ LDXIM &03
+ LDAIM &FF
+LOADL1 PHA  ;Push cumulative AND of address
+ LDAAX INFO +BKLOAD ;Address from command block
+ STAAX BKADDR
+ PLA
+ ANDAX BKADDR
+ DEX
+ BPL LOADL1
+
+ CMPIM &FF ;If $FF, all bytes are $FF => error
+ BNE LOADLB ;Continue load
+
+ JSR BEEPOF ;Motor off/beep
+ JMP MBADHX
+
+LOADLB LDA INFO +BKFLAG ;Check protection bit
+ LSRA  ;CS -> prot. CC -> unprot
+ PLA  ;Check if loading and running
+ BCC LOADLA ;Not protected -> carry on
+ BEQ LOADLC ;Yes => carry on
+
+PROTER JSR CASMOF ;Turn motor off
+;Also called from RDBFER
+
+ BRK
+ = CFSERL
+ = "Locked"
+ = &00
+
+LOADLC
+ LDAIM &03
+ STA CRIT ;Loading/running & prot., so disable ESCAPE and trap BREAK
+LOADLA
+ LDAIM NIGBIT
+ AND USFLGS
+ BEQ LOADL8 ;If ignore set, just read block
+ LDA HDRCRC ;Check hdr. checksum
+
+;Don't start bg job if header CRC is no good,
+;otherwise data may be loaded somewhere strange
+
+ BNE LOADL7
+LOADL8 TYA
+ PHA ;Store "Loading" flag
+ JSR TWINIT ;Initialise tube for writing if nesc.
+ PLA
+ TAY ;Restore "Loading" flag
+ JSR RDBLOK
+LOADL7 JSR LODHDR ;Print header and error msgs.
+ BNE LODRTR ;=> retry
+
+ JSR NXTBLK ;Next block := blk. found + 1
+ BIT INFO +BKFLAG
+ BMI LOADEX ;Just loaded last block => finish
+
+ JSR ADDBKA ;Add block size to BKADDR
+
+ JSR RDHEAD
+ BNE LOADLA ;Always jump
+
+LOADEX
+ [ LENSW =0;Alter OSFILE control block
+ LDYIM &0A ;Length offset in OSFILE block
+ LDA FSIZE ;File size set in PRTHDR
+ STAIY GENPTR ;Note GENPTR kept from OSFILE
+ INY
+ LDA FSIZE + 1
+ STAIY GENPTR
+ LDAIM &00 ;Set high bytes of length = 0
+ INY
+ STAIY GENPTR
+ INY
+ STAIY GENPTR
+ ]
+
+ PLP  ;Restore interrupt status
+
+FINOP
+
+ JSR BEEPOF ;Motor OFF/BEEP
+
+NOOLN1 BIT ERRSW ;If error taken place, already new line
+ BMI FINOPX
+NOOLIN PHP
+ JSR MSGOUT
+ = MCR
+ = &00 ;Print new line if msgs on
+ PLP
+FINOPX RTS
+
+
+
+LODRTR JSR SEARCH ;Search for current block (BLOKNO)
+ BNE LOADLA ;Try and reload data
 
 
  TTL C.F.S. Main Routines - RUN
@@ -438,8 +425,11 @@ SAVEL3 STX INFO +BKFLAG
 
 RUN
  JSR GETFLN
- LDXIM &FF
- STX INFO +BKEXEC ;=> load at file's load address
+ ;initialise GENPTR as this is not an OSFILE load
+ LDXIM FSIZE - &0A ;note value assumed nonzero
+ STX GENPTR ;so LOADEX overwrites FSIZE with itself
+ STA GENPTR+1 ;A=0 from GETFLN
+ STX INFO +BKEXEC ;=> >0 loads file to header addr
 
 ;Note, is assumed here that A = 0 from GETFLN
 ;since LOADGO tests A
@@ -494,7 +484,6 @@ CATOFF LDAIM NCTBIT
 ANDSTA AND CFSTAT
 ANDSTB STA CFSTAT
 
-SAVFIN  ;Exit from SAVE
  RTS
 
 ORLST
@@ -512,7 +501,6 @@ LOOK PHA
  BEQ LOOKLR ;No SFS -> don't call SFS routines
 
  JSR SRINIT ;Initialise SERROM ptr.
- JSR SRNEXT
  BCC LOOKLR
 
  CLV ;Indicate end of rom to outside world
@@ -916,12 +904,12 @@ GBEOF BRK
 
 
 PUTBYT
- STA IADDR
 
 ;Note, IADDR not used in this
 ;function coz RX interrupts are "disabled"
 ;by TXFLAG (see IRUPT)
 
+ PHA
  TXA
  PHA
  TYA
@@ -929,8 +917,9 @@ PUTBYT
  LDAIM OUTHND
  JSR CHKHND ;Check handle open
 
+ TSX
+ LDAAX &0103
  LDX OUTPTR
- LDA IADDR ;Restore byte to put
  STAAX OUTBFR
  INX
  BNE PBEXIT ;Test if last byte of buffer
@@ -943,8 +932,8 @@ PBEXIT INC OUTPTR
 ;user can retry if block is interrupted
 ;by ESCAPE.
 
- LDA IADDR
- JMP OPENEX
+ JMP PLYXAR
+ ;and now IADDR is not used at all.
 
 
 

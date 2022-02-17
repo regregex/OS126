@@ -217,36 +217,33 @@ WORD  ;OSWORD call
 ; C=0
  BCC BYTE2 ;[ALWAYS jump, C=0 => OSWORD call]
 
-
 PEEK  ;read byte from I/O processor
- JSR PEKBYT ;sets X=0, Y=4
- LDAIX PEEKLO-MCVER ;read byte
- STAIY WORDX ;save result
- RTS
-
+ CLC
 POKE  ;write byte to I/O processor
- JSR PEKBYT ;sets X=0, Y=4
- LDAIY WORDX ;useful for POKE
- STAIX PEEKLO-MCVER ;write byte
+ TAX ;hold address lo-byte
+ INY ;Y=1
+ LDAIY WORDX ;get address hi-byte
+ PHA ;address in X and 1,S
+ LDYIM &04 ;point to byte to write
+ LDAIY WORDX
+ TAY ;hold byte to write
+ PLA ;restore MSB of address
+ JSR BOUNCE ;write byte in Y/read byte into A
+ LDYIM &04
+ STAIY WORDX ;store byte read in OSWORD block
+VER
+ BEQ PVER
+ LDXIM &01 ;X=1 for OSBYTE 0,1 MOS version 1
 MSGONY  ;used by MSGON below
  LDAIM ZERO
  RTS
 
-PEKBYT  ;used by PEEK and POKE
-; assumes Y=0, A=[LDAIY WORDX]
- STA PEEKLO ;lo-IO address
- INY ;Y := 1
- LDAIY WORDX
- STA PEEKHI ;hi-IO address
- LDYIM &04 ;generally useful
-RVER  ;return OS version number in X
- LDXIM MCVER ;generally useful
- RTS
+COPYR ;here to save a byte
+ = ")"
+ = "C"
+ = "(" ;BRK forms terminator
 
-
-VER  ;print version number of OS
- BNE RVER
-;
+PVER
  BRK
  = FX0MSG
  = "OS "
@@ -255,7 +252,6 @@ VER  ;print version number of OS
  = VERB
  = VERC
  = ZERO
-
 
 NOTE  ;add note to note buffer
 ; *********************
@@ -418,7 +414,6 @@ NVLP  ;define envelope shape
 ; A := envelope number
 ; C=1
 ;
- SBCIM &01 ;subtract 1 from envelope number
 ;
 ; envelope number forced into range 0 to 15 (1->0, 2->1 ... 16->15)
 ; (0 forced to 255, which will have the same effect as 15)
@@ -426,9 +421,8 @@ NVLP  ;define envelope shape
  ASLA
  ASLA
  ASLA
- ASLA ;envelope number := (envelope number - 1) * 16
- ORAIM ENVSIZ-&01 ;N.B. ENVSIZ must be 16!
- TAX ;X -> end of envelope (relative to ENVEL)
+ ASLA ;envelope number := envelope number * 16
+ TAX ;N.B. ENVSIZ must be 16!
 ;
 ; copy envelope definition to envelope slot
 ; padding to 16 bytes with zeroes
@@ -442,8 +436,8 @@ NVLP1
 ;
  LDAIY WORDX
 NVLP2
- STAAX ENVEL
  DEX
+ STAAX ENVEL
  DEY
  BNE NVLP1
 ;
@@ -553,8 +547,27 @@ BUFFPR
 
 
 BUFEXH LDAIM BEL ;reflect bell to indicate error
-BUFIGN DEY ;adjust buffer pointer to ignore character
+ BNE BUFIGN ;ALWAYS jump
+
+BUFNXB  ;check for ESC explicitly in case machine in non ESC mode
+;CMPIM ESC
+;BEQ BUFESC ;[ESC, N.B. C = 1]
+; not DEL, NAK or ESC
+ STAIY RDLNBF ;store character in buffer
+ CMPIM MCR
+ BEQ BUFEND ;[CR detected, exit indicating CR received]
+ CPY RDLNN
+ BCS BUFEXH ;[buffer exhausted, do not echo character]
+;
+; buffer not exhausted
+;
+ CMP RDLNLC
+ BCC BUFIGN ;[character < lo-character]
+ CMP RDLNHC
+ BCC BUFECH ;[character < hi-character, so accept]
+ BNE BUFIGN ;[character > hi-character, so ignore]
 BUFECH INY ;increment count of characters in buffer
+BUFIGN
 ; echo character
 BFWRCH
  JSR OSWRCH
@@ -608,25 +621,6 @@ BUFCNL  ;output DEL for each character in the buffer
  BEQ BUFFIN ;[ALWAYS jump, reached start of line]
 ; NEVER fall thru
 ;
-BUFNXB  ;check for ESC explicitly in case machine in non ESC mode
-;CMPIM ESC
-;BEQ BUFESC ;[ESC, N.B. C = 1]
-; not DEL, NAK or ESC
- STAIY RDLNBF ;store character in buffer
- CMPIM MCR
- BEQ BUFEND ;[CR detected, exit indicating CR received]
- CPY RDLNN
- BCS BUFEXH ;[buffer exhausted, do not echo character]
-;
-; buffer not exhausted
-;
- CMP RDLNLC
- BCC BUFIGN ;[character < lo-character]
- CMP RDLNHC
- BEQ BUFECH ;[character = hi-character, so accept]
- BCC BUFECH ;[character < hi-character, so accept]
- BCS BUFIGN ;[ALWAYS jump, character > hi-character, so ignore]
-; NEVER fall thru
 
 BUFEND  ;read line successful
 ; echo LF CR

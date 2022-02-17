@@ -104,9 +104,9 @@ DCD LDXIM &05 ;Programme all full colours & modes to zero
 DCDA STAAX FTCOLF
  DEX
  BPL DCDA
+ TXA ;A = &FF
  LDX NCOLOR ;Set foreground colours & ZORA & ZEOR
  BEQ DCTTX ;Branch for TTX
- LDAIM &FF
  CPXIM &0F
  BNE DCDB
  LDAIM INVSXT ;Don't invert flashing bit
@@ -116,38 +116,31 @@ DCDB STA FTCOLF
  STA ZORA
  STA ZEOR
  STX QEND-&04 ;set logical colour := NCOLOR
+ LDAIM &07
  CPXIM &03 ;How many colours?
- BEQ DCDLA
- BCC DCDLI
-
-;16 colours - one to one
-
- STX QEND-&03
-DCDLF JSR DCC
- DEC QEND-&03
- DEC QEND-&04
- BPL DCDLF
- RTS
-
+ BCC DCDLF
+ BNE DCDLI
 
 ;4 colour, use shift right of $07
 
-DCDLA LDXIM &07
- STX QEND-&03
-DCDLH JSR DCC
- LSR QEND-&03
+DCDLH JSR DCDLJ
+ LDA QEND-&03
+ LSRA
  DEC QEND-&04
  BPL DCDLH
  RTS
 
+;16 colours - one to one
+
+DCDLI TXA
+
 ;2 colour (TTX also executes this rouine)
 
-DCDLI LDXIM &07 ;Programme log.=1, phys.=7
- JSR DCDLJ
- LDXIM &00 ;Programme log.=0, phys.=0
- STX QEND-&04
-
-DCDLJ STX QEND-&03 ;& fall through to ....
+DCDLF JSR DCDLJ ;Programme log.=1, phys.=7
+ DEC QEND-&04
+ LDA QEND-&04
+ BNE DCDLF
+DCDLJ STA QEND-&03 ;& fall through to ....
 
 ;DC3 ($13) - Programme logical/
 ;physical colour relation

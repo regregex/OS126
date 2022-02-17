@@ -27,18 +27,19 @@ LINE JSR LINSA ;Find DeltaX & DeltaY to LDELTA
 ;Encoded version of a previous routine
 
  LDA LDELTA+&03 ;DY, MSB Are the deltas of the same sign?
+ TAX
  EOR LDELTA+&01 ;DX, MSB
- BMI LINSBA
- LDA LDELTA+&02 ;YES, then compare DeltaY - DeltaX
- CMP LDELTA
- LDA LDELTA+&03
+ ASLA
+ LDA LDELTA+&02
+ BCS LINSBA
+ CMP LDELTA ;YES, then compare DeltaY - DeltaX
+ TXA
  SBC LDELTA+&01
  JMP LINSBB
-LINSBA LDA LDELTA ;NO, then add
- CLC
- ADC LDELTA+&02
- LDA LDELTA+&01
- ADC LDELTA+&03
+LINSBA CLC ;NO, then add
+ ADC LDELTA
+ TXA
+ ADC LDELTA+&01
 LINSBB RORA  ;c to b7 of A
  LDXIM &00
  EOR LDELTA+&03 ;If DY < 0, then invert b7 of A. Sets n as required

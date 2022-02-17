@@ -45,7 +45,7 @@ MOS99 * DEFOPT
 MCVER * &01 ;OS binary version number
 VERA * "1"
 VERB * "2"
-VERC * "0"
+VERC * "6"
 
 
 ; composition
