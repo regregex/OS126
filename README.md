@@ -27,7 +27,7 @@ OS 1.26 has the following modifications:
 - 21 bytes cleared in the top page
 
 The free space is placed at the end of the \*command table, currently
-located at address &9F69.
+located at address &DF69.
 
 Build requirements: OS 1.26
 ---------------------------
@@ -85,7 +85,7 @@ Patching the \*command table
 
 With the space made available, it is now practical to add \*commands to
 the built-in OS command set.  New entries can be inserted in place of
-the NUL terminator byte, currently located at address &9F68.
+the NUL terminator byte, currently located at address &DF68.
 
 Command table entries have the following form:
 
