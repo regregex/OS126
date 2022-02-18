@@ -34,10 +34,15 @@ Build requirements: OS 1.26
 
 See the upstream release notes, included below, on how to assemble OS
 1.26 from the prebuilt disc images, substituting the version number as
-necessary.
+necessary.  The Stardot method builds the OS using a physical Acorn
+'Turbo' second processor (or a device emulating one) plugged into a BBC
+Micro or Master series computer.
 
-With a Windows system available it may be more convenient to build the
-ROM image in a RISC OS emulator.  An
+There is also the option to assemble using an emulated Turbo processor,
+running under RISC OS 2 or 3.x.
+
+On a Windows PC it may be convenient to emulate the Turbo along with
+RISC OS itself, to build the ROM image on the local file system.  An
 [article on 4corn](https://www.4corn.co.uk/articles/65hostandmos/)
 provides detailed instructions on how to install RPCEmu, assemble a
 Turbo second processor emulator inside, and build OS 1.20 in the Turbo
@@ -65,10 +70,10 @@ To build the disc images from the source, you will need:
 - a POSIX environment such as Linux, or MinGW on Windows
 - `unix2mac`, part of the `dos2unix` package
 - for DFS: [MMB Utils](https://github.com/sweharris/MMB_Utils) by
-  Stephen Harris, which require a C compiler
+  Stephen Harris, which require Perl
 - for ADFS:
   [Acorn FS Utils](https://github.com/SteveFosdick/AcornFsUtils) by
-  Steve Fosdick, which require Perl
+  Steve Fosdick, which require a C compiler
 
 Install the MMB Utils and Acorn FS Utils on your `PATH`, as needed.
 Then enter the respective `dfs/` or `adfs/` directory, and enter:
@@ -181,7 +186,7 @@ Known problems
 --------------
 
 - Certain \*commands in the Opus DDOS and Challenger ROMs corrupt the
-  stack and crash on exit
+  stack, causing a crash on exit
   ([patched disassemblies](http://regregex.bbcmicro.net/#features.bbc)
   are available).
 - Many software titles, especially games, decrypt themselves using the
