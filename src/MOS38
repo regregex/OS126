@@ -222,7 +222,7 @@ COMTAB  ;table of MOS commands
 
  = ZERO ;end of table
 
- % 101 ;padding
+ % 115 ;padding
 
 CLINT
  STX WORK +&00
@@ -397,30 +397,27 @@ SKPCOM
 GETNUM
  JSR SKIPSP ;skip leading spaces, A := delimiter
  JSR TSTNUM
- BCC TSTNR ;[not a digit]
-GN0
- STA NUMBER ;NUMBER := accumulated number so far
- JSR TSTNUX ;read digit skipping current character
- BCC GTNS ;[non-digit serves as terminator]
+ BCS GN0
+ RTS ;C=0 [not a digit]
+
+GNT
+ CPXIM &1A ;if 26 or more
+ BCS TSTNR ;then overflow
  TAX ;save last digit read
  LDA NUMBER
  ASLA ;times 2
- BCS TSTNR ;[overflow]
  ASLA ;times 4
- BCS TSTNR ;[overflow]
+ ADC NUMBER ;times 5; C=0
+ ASLA ;times 10; C=0
+ STX NUMBER ;NUMBER := most recently read digit
 ; N.B. C=0
- ADC NUMBER ;times 5
+ ADC NUMBER ;A := accumulated value
  BCS TSTNR ;[overflow]
- ASLA ;times 10
- BCS TSTNR ;[overflow]
- STA NUMBER ;NUMBER := NUMBER * 10
- TXA ;A := most recently read digit
-; N.B. C=0
- ADC NUMBER ;NUMBER := accumulated value
- BCS TSTNR ;[overflow]
- BCC GN0 ;[read next digit, if any]
-GTNS
- LDX NUMBER
+GN0
+ STA NUMBER ;NUMBER := accumulated number so far (must save for KEY)
+ TAX
+ JSR TSTNUX ;read digit skipping current character
+ BCS GNT ;process digit [non-digit serves as terminator]
  CMPIM MCR
  SEC
 ; return with:

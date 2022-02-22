@@ -19,8 +19,10 @@
 ;line & triangles
 
 EMA LDXIM NEWPT-V ;Convert external to internal
- JSR EIG ;for the 4 bytes starting at Q
  LDA PLMODE ;Get plot mode
+ PHA
+ JSR EIGC ;for the 4 bytes starting at Q
+ PLA
  CMPIM &04 ;BASIC's MOVE command
  BEQ EMAEX
  LDYIM &05 ;Point to do damn' all mode (for plotting that produces no change)
@@ -192,7 +194,6 @@ WINDAB RTS  ;No longer referenced from EIG, incidentally, saving TWO WHOLE BYTES
 ;EIGABS in some embarassment is to provide EIG in ABSOLUTE co-ords
 
 EIGABS LDAIM &FF
- BNE EIGC ;(branch always taken)
 
 ;Convert external to internal co-ordinates
 
@@ -210,7 +211,6 @@ EIGABS LDAIM &FF
 ;a) Add the cursor to current posn. if relative
 ;& add origin in both cases
 
-EIG LDA PLMODE
 EIGC STA ZTEMP
  LDYIM &02 ;Do this for Y co-ordinates
  JSR EIGS
@@ -264,6 +264,7 @@ DIVAXT LDAAX V+&03 ;Signed division by 2
  ASLA  ;(Screen now 1280 by 1024)
  RORAX V+&03
  RORAX V+&02
+LINEX1
  RTS
 
 

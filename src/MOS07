@@ -51,12 +51,12 @@ LINEA STX ZTEMPC ;0 if p.b.X, 2 if p.b.Y
  STA JVEC
  LDAAX D1JTB+&01
  STA JVEC+&01
- LDAAX LDELTA+&01 ;Sign of D1
- BPL LINEB
- LDXIM GCSIR-V ;+ve, then LSTART from GCSIR...
- BNE LINEC ;(branch always taken)
-LINEB LDXIM NEWPT-V ;Copy LSTART from new point
-LINEC STX ZTEMPC+&01 ;Offset of LSTART (=PStart of old)
+ LDAIM GCSIR-V ;+ve, then LSTART from GCSIR...
+ LDYAX LDELTA+&01 ;Sign of D1
+ BMI LINEC
+ LDAIM NEWPT-V ;Copy LSTART from new point
+LINEC STA ZTEMPC+&01 ;Offset of LSTART (=PStart of old)
+ TAX
  LDYIM LSTART-V ;Copy to LSTART
  JSR COPYF
  LDA ZTEMPC+&01 ;Get Horizontal co-ordinate of other (end) point
@@ -81,8 +81,7 @@ LINEC STX ZTEMPC+&01 ;Offset of LSTART (=PStart of old)
 LINED LDX ZTEMPB+&01 ;Window other point
  JSR WIND
  BIT ZTEMPB ;Anything to do ?
- BEQ LINEE
- RTS ;No, then exit
+ BNE LINEX1 ;No, then exit
 LINEE LDX ZTEMPC ;Isolate 2nd horizontal window
  BEQ LINEF
  LSRA

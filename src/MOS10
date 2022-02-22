@@ -191,7 +191,8 @@ HPLOTL TXA
  BCC HPLOTQ
  LSR ZTEMPB +&01 ;y>3, i.e 8 pixels per byte
  RORA
-HPLOTP LSR ZTEMPB +&01 ;y=3, i.e. 4 pixels per byte
+HPLOTP ;y=3, i.e. 4 pixels per byte
+ ;ZTEMPB +&01 dead; C dead as A must not exceed &4F
  LSRA
 HPLOTQ LDY YLINE ;Prepare ye the way of the loop
  TAX  ;Contains the nuber of complete bytes to be filled in
