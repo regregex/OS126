@@ -23,11 +23,11 @@ OS 1.26 has the following modifications:
 - Locations &02CF, &02D0 and &02D1 are not touched
 - Locations &C4 and &CB are unused while the CFS or RFS is active
 - Semantically transparent optimisations
-- 100 bytes cleared in the main section + 1 existing = 101 bytes free
+- 114 bytes cleared in the main section + 1 existing = 115 bytes free
 - 21 bytes cleared in the top page
 
 The free space is placed at the end of the \*command table, currently
-located at address &DF69.
+located at address &DF62.
 
 Build requirements: OS 1.26
 ---------------------------
@@ -41,8 +41,8 @@ Micro or Master series computer.
 There is also the option to assemble using an emulated Turbo processor,
 running under RISC OS 2 or 3.x.
 
-On a Windows PC it may be convenient to emulate the Turbo along with
-RISC OS itself, to build the ROM image on the local file system.  An
+On a Windows PC it may be convenient to emulate RISC OS itself along
+with the Turbo, to build the ROM image on the local file system.  An
 [article on 4corn](https://www.4corn.co.uk/articles/65hostandmos/)
 provides detailed instructions on how to install RPCEmu, assemble a
 Turbo second processor emulator inside, and build OS 1.20 in the Turbo
@@ -60,7 +60,7 @@ build OS 1.26:
     *Quit
 
 The current ROM image has an MD5SUM of
-`dde1be39596d8fc22ebdc682ce7905fd`.
+`3c5c1fbe74d7edb376ff593b64894a52`.
 
 Build requirements: disc images
 ------------------------------
@@ -85,7 +85,7 @@ Patching the \*command table
 
 With the space made available, it is now practical to add \*commands to
 the built-in OS command set.  New entries can be inserted in place of
-the NUL terminator byte, currently located at address &DF68.
+the NUL terminator byte, currently located at address &DF61.
 
 Command table entries have the following form:
 
@@ -103,7 +103,7 @@ full.
 Following the name of the command is the high byte of the *action
 address* which the command interpreter will call.  The high byte always
 has bit 7 set to mark the end of the command name.  Bit 6 must be set
-too, to address constant OS memory; code in paged ROM is reachable via
+too, to address constant OS memory; code in paged ROM can be reached via
 the extended vector entry points at &FF00..&FF4E.  The low byte of the
 address comes next.
 
@@ -130,13 +130,13 @@ Remember to replace the terminator byte at the end of the new table!
 
 ### Useful addresses
 
-Pointing a \*command at `CLIEND` (&E052) passes it to paged ROMs or the
+Pointing a \*command at `CLIEND` (&E059) passes it to paged ROMs or the
 current filing system.  This is convenient for disposing of the
 abbreviated forms of a command; the most efficient auxiliary byte value
 is &FF.
 
 To bypass utility ROMs, an action address equal to `JMIFSC - &07`
-(&E05B) sends the command straight to the filing system control vector,
+(&E062) sends the command straight to the filing system control vector,
 defined at &021E.
 
 `JMIUSR` (&E67E) sends a \*command to USERV, defined at &0200.  An
@@ -144,8 +144,8 @@ auxiliary byte value of &01 emulates `*LINE`; other values (between &02
 and &7F inclusive) cause entry into the USERV routine with non-standard
 reason codes.  X and Y must contain the address of the first argument.
 
-In routines, `SKIPSP` (&E06B) returns a non-space character in A, its
-offset in Y, and `EQ` if that character is CR.  `SKIPSN` (&E06A) is the
+In routines, `SKIPSP` (&E072) returns a non-space character in A, its
+offset in Y, and `EQ` if that character is CR.  `SKIPSN` (&E071) is the
 same but ignores the current character by advancing Y over it.
 
 As an example, a command named `I` whose routine begins with
@@ -162,8 +162,8 @@ After making changes
 ---------------------
 
 Adjust the amount of padding at line 225 of `src/MOS38` to ensure that
-`src/MOS76` assembles up to &FBFF exactly.  The assembler will warn if
-the code overruns into the FRED area - but not if it falls short.
+`src/MOS76` assembles code up to &FBFF exactly.  The assembler will warn
+if the code overruns into the FRED area - but not if it falls short.
 
 More space at a pinch
 ---------------------
@@ -180,7 +180,7 @@ reassembling, minus some frills.  Delete lines 80..85 from `src/MOS34`:
 
 Modify line 225 of `src/MOS38` accordingly:
 
-     % 110 ;padding
+     % 124 ;padding
 
 Known problems
 --------------
