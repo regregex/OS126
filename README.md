@@ -16,6 +16,7 @@ OS 1.26 has the following modifications:
 - In the `VDU 21` state, cursor motion codes are only sent to the
   printer while `VDU 2` applies; the parameter of `VDU 1` is printed
   once
+- `VDU 28` checks the parameters correctly
 - The paged ROM indirection routine places one byte less on the stack
 - OSBYTE calls to write to I/O memory avoid causing a dummy read cycle
   before the write, which upsets some hardware
@@ -23,11 +24,11 @@ OS 1.26 has the following modifications:
 - Locations &02CF, &02D0 and &02D1 are not touched
 - Locations &C4 and &CB are unused while the CFS or RFS is active
 - Semantically transparent optimisations
-- 114 bytes cleared in the main section + 1 existing = 115 bytes free
+- 123 bytes cleared in the main section + 1 existing = 124 bytes free
 - 21 bytes cleared in the top page
 
 The free space is placed at the end of the \*command table, currently
-located at address &DF62.
+located at address &DF5C.
 
 Build requirements: OS 1.26
 ---------------------------
@@ -60,7 +61,7 @@ build OS 1.26:
     *Quit
 
 The current ROM image has an MD5SUM of
-`3c5c1fbe74d7edb376ff593b64894a52`.
+`bc779c4ee7826f8e44090d9bfd4f0ecf`.
 
 Build requirements: disc images
 ------------------------------
@@ -85,7 +86,7 @@ Patching the \*command table
 
 With the space made available, it is now practical to add \*commands to
 the built-in OS command set.  New entries can be inserted in place of
-the NUL terminator byte, currently located at address &DF61.
+the NUL terminator byte, currently located at address &DF5B.
 
 Command table entries have the following form:
 
@@ -130,22 +131,22 @@ Remember to replace the terminator byte at the end of the new table!
 
 ### Useful addresses
 
-Pointing a \*command at `CLIEND` (&E059) passes it to paged ROMs or the
+Pointing a \*command at `CLIEND` (&E05C) passes it to paged ROMs or the
 current filing system.  This is convenient for disposing of the
 abbreviated forms of a command; the most efficient auxiliary byte value
 is &FF.
 
 To bypass utility ROMs, an action address equal to `JMIFSC - &07`
-(&E062) sends the command straight to the filing system control vector,
+(&E065) sends the command straight to the filing system control vector,
 defined at &021E.
 
-`JMIUSR` (&E67E) sends a \*command to USERV, defined at &0200.  An
+`JMIUSR` (&E681) sends a \*command to USERV, defined at &0200.  An
 auxiliary byte value of &01 emulates `*LINE`; other values (between &02
 and &7F inclusive) cause entry into the USERV routine with non-standard
 reason codes.  X and Y must contain the address of the first argument.
 
-In routines, `SKIPSP` (&E072) returns a non-space character in A, its
-offset in Y, and `EQ` if that character is CR.  `SKIPSN` (&E071) is the
+In routines, `SKIPSP` (&E075) returns a non-space character in A, its
+offset in Y, and `EQ` if that character is CR.  `SKIPSN` (&E074) is the
 same but ignores the current character by advancing Y over it.
 
 As an example, a command named `I` whose routine begins with
@@ -180,7 +181,7 @@ reassembling, minus some frills.  Delete lines 80..85 from `src/MOS34`:
 
 Modify line 225 of `src/MOS38` accordingly:
 
-     % 124 ;padding
+     % 133 ;padding
 
 Known problems
 --------------
