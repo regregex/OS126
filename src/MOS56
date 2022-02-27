@@ -442,11 +442,12 @@ KTBL * KTBL0 -&10
  = CURLFT ;cursor left (fC)
 
 ; 'hide' 6 bytes
-OLDKEY  ;force old key state
- STY CKEY ;CKEY := 0
- STX OKEY ;force old key state
- RTS
- = NULL ;pad to 6 bytes
+PUTCHK
+
+;Output byte to cassette and add to check sum.
+
+ JSR PUTCAS
+ JMP ADDCRC
 
 ;       ROW     2
  = SOFTK0 ;f0

@@ -412,18 +412,20 @@ CSAD LDXIM &02
 FS LDX MODE
  LDA QEND-&02 ;Do y co-ordinates. Get bottom (higher numbered) row
  CMP QEND ;Top row above bottom ?
- BCC PRACX ;No?, then fail
+ BCC FSF ;No?, then fail
  CMPAX PROWS ;Is > max. no. rows?
  BEQ FSC
- BCS PRACX ;Yes, then fail
+ BCS FSE ;Yes, then fail
 FSC LDA QEND-&01 ;Do x co-ordinates. Get RH margin
  TAY
  CMPAX PCOLS ;Is > than max. cols?
  BEQ FSB
+FSE
  BCS PRACX ;Yes, then fail
 FSB SEC
  SBC QEND-&03 ;How many cols. wide ?
- BMI PRACX ;Fail if -ve no. cols.
+FSF
+ BCC PRACX ;Fail if -ve no. cols.
  TAY
  JSR SETPWW ;Set PWWDTH
  LDAIM &08 ;Set bit 3 for soft scrolling
@@ -446,25 +448,13 @@ PRAAA LDAIY WARGS ;Copy (x,y) to RPXLWS ...
  LDYIM &04 ;Store in (XY) +4
  BNE PRACB ;(branch always taken)
 
-RPALET
- AND NCOLOR ;Read parrot
- TAX
- LDAAX PARROT
-PRACA INY
-PRACB STAIY WARGS
- LDAIM &00
- CPYIM &04
- BNE PRACA
-PRACX RTS
-
 ;FF ($0C) Form feed
 
 FF JSR ANOMQ ;Cursors joined ?
  BNE FFANOM ;Yes, then clear graphics area
  LDA STATS ;Window set ?
  ANDIM &08 ;Test bit 3 of STATS
- BNE FFA ;Set?, then window clear
- JMP CLATXT ;Clear?, then fast clear
+ BEQ FFC ;Clear?, then fast clear
 FFA LDX TWTROW ;Initialise cursor to top row
 FFB STX CSY ;Clear this line
  JSR CLTLIN
@@ -480,7 +470,33 @@ FFB STX CSY ;Clear this line
 
 RS JSR ANOMQ
  BEQ RSA
- JMP RSAN
+;RSAN Anomalous cursor home
+
+RSAN LDXIM GWTROW-V ;Copy GWLCOL to GCSIR
+ LDYIM GCSIY-V
+ JSR COPY2 ;Copy 4 bytes of RAM saves 2 bytes of ROM
+
+;& fall through to ...
+
+
+;CRAN Anomalous carriage return
+
+CRAN LDXIM GWLCOL-V ;Copy GWLCOL to GCSIX
+ LDYIM GCSIX-V
+ JSR COPY2
+ JMP IEG
+
+RPALET
+ AND NCOLOR ;Read parrot
+ TAX
+ LDAAX PARROT
+PRACA INY
+PRACB STAIY WARGS
+ LDAIM &00
+ CPYIM &04
+ BNE PRACA
+PRACX RTS
+
 RSA STA QEND
  STA QEND-&01
 
@@ -502,19 +518,20 @@ US JSR ANOMQ ;Cursors joined ?
  LDA QEND ;Add offset to y posn
  CLC
  ADC TWTROW
- STA CSY
- JSR TADDR ;Attempt to posn. csr
+ JSR SYTADD ;Attempt to posn. csr
  BCC FSD ;to a JMP CSDSP
 
 USAF LDXIM CSX-V
  LDYIM USWS-V
  JMP SWAP2
 
+FFC
+ JMP CLATXT ;Clear?, then fast clear
+
 ;CR ($0D) Carriage return
 
 CR JSR ANOMQ
- BEQ CRA
- JMP CRAN
+ BNE CRAN
 CRA JSR SSCRIM ;Position cursor to LH edge of window
  JMP CSDA ;Display cursor & TADDR
  LNK MOS03

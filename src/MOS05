@@ -270,6 +270,9 @@ CLTLND STA CSX
 FAIL SEC
  RTS
 
+SYTADD
+ STA CSY
+
 ;Addresses CSX,CSY to memory locn. on screen.
 ;Checks that CSX & CSY are in window
 ;Returns with no action and c=1 if outside.
@@ -280,16 +283,16 @@ FAIL SEC
 
 TADDR LDX CSX ;Check window of CSX
  CPX TWLCOL ;Lower than LH margin ?
- BMI FAIL
+ BCC FAIL
  CPX TWRCOL ;Higher than RH edge ?
  BEQ TADDRX
- BPL FAIL
+ BCS FAIL
 TADDRX LDX CSY ;Check CSY
  CPX TWTROW
- BMI FAIL
+ BCC FAIL
  CPX TWBROW
  BEQ TADDRY
- BPL FAIL
+ BCS FAIL
 
 ;End of windowing, now calc. memory posn.
 ;As TADDR with no bounds checking
@@ -392,22 +395,6 @@ PRANMF DEC GCSIY
  LDXIM APCS1 ;Finished, so restore grpahics cursor
  LDYIM GCSIR-V
  JMP COPYF ; (branch always taken)
-
-;RSAN Anomalous cursor home
-
-RSAN LDXIM GWTROW-V ;Copy GWLCOL to GCSIR
- LDYIM GCSIY-V
- JSR COPY2 ;Copy 4 bytes of RAM saves 2 bytes of ROM
-
-;& fall through to ...
-
-
-;CRAN Anomalous carriage return
-
-CRAN LDXIM GWLCOL-V ;Copy GWLCOL to GCSIX
- LDYIM GCSIX-V
- JSR COPY2
- JMP IEG
 
 ;NON-ANOMALOUS
 

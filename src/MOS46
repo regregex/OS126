@@ -607,18 +607,13 @@ BUFNQ  ;VDU not queueing
 BUFNXA
  CMPIM MNAK
  BNE BUFNXB ;[not DEL or NAK]
- TYA
- BEQ BUFFIN ;[cancel at start of line, ignore]
-;
-; cancel with non-zero count of characters
-;
  LDAIM MDEL
-;
+ INY
 BUFCNL  ;output DEL for each character in the buffer
- JSR OSWRCH
  DEY
- BNE BUFCNL ;[more characters to delete]
- BEQ BUFFIN ;[ALWAYS jump, reached start of line]
+ BEQ BUFFIN ;[reached start of line]
+ JSR OSWRCH
+ JMP BUFCNL ;[ALWAYS jump, more characters to delete]
 ; NEVER fall thru
 ;
 
@@ -633,6 +628,20 @@ BUFESC  ;escape exit (C=1)
  RTS
 
 
+;flash keyboard LEDs while waiting for printer buffer to purge
+;C=1
+SPFL
+ [ FALSE=0
+ PHA ;save FX call number
+ TXA
+ PHA ;save printer selection
+ JSR MOSTST ;flash LEDs
+ PLA
+ TAX ;restore printer selection
+ PLA ;restore FX call number
+ SEC ;restore C=1
+ ]
+
 SPRINT  ;change printer selection (*FX 5)
 ; allow interrupts during wait, this means that:
 ; (a) the printer can purge AND/OR
@@ -642,7 +651,7 @@ SPRINT  ;change printer selection (*FX 5)
  BIT ESCFLG
  BMI SPR0 ;[escape detected]
  BIT PFLAG
- BPL SPRINT ;[printer busy]
+ BPL SPFL ;printer busy, flash LEDs while purging
 ; mention change of printer to print routines
  JSR UPTX ;N.B. Y corrupted
 ; interrupts may have corrupted BYTEX and BYTEY, so restore them

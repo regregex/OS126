@@ -706,12 +706,10 @@ WRBKEX RTS
 
 
 
-PUTCHK
-
-;Output byte to cassette and add to check sum.
-
- JSR PUTCAS
- JMP ADDCRC
+OLDKEY  ;force old key state
+ STY CKEY ;CKEY := 0
+ STX OKEY ;force old key state
+ RTS
 
 
 
@@ -783,10 +781,11 @@ PRTHDR
  LDA INFO +BKSZEL
  STA FSIZE
  LDA INFO +BKNOLO
+ TAY
  CLC
  ADC INFO +BKSZEH
  STA FSIZE + 1
- LDA INFO +BKNOLO
+ TYA
  ORA INFO +BKNOHI
  BEQ PRTHL8 ;If first block, is new file
  BIT OLDFLG ;If previous block = last block
