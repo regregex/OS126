@@ -9,10 +9,10 @@ OS 1.26 has the following modifications:
 
 - An OSWRSC entry point is provided at &FFB3
 - The OSFILE call handler in the Cassette and ROM filing systems (CFS,
-  RFS) always returns the correct length of the file to the control
-  block
-- Calling `*RUN` on a cassette or ROM file does not overwrite arbitrary
-  I/O addresses after loading the file
+  RFS) [always returns] [1] the correct length of the file to the
+  control block
+- Calling `*RUN` on a cassette or ROM file [does not overwrite] [1]
+  arbitrary I/O addresses after loading the file
 - In the `VDU 21` state, cursor motion codes are only sent to the
   printer while `VDU 2` applies; the parameter of `VDU 1` is printed
   once
@@ -44,10 +44,9 @@ running under RISC OS 2 or 3.x.
 
 On a Windows PC it may be convenient to emulate RISC OS itself along
 with the Turbo, to build the ROM image on the local file system.  An
-[article on 4corn](https://www.4corn.co.uk/articles/65hostandmos/)
-provides detailed instructions on how to install RPCEmu, assemble a
-Turbo second processor emulator inside, and build OS 1.20 in the Turbo
-emulator.  
+[article on 4corn] [2] provides detailed instructions on how to install
+RPCEmu, assemble a Turbo second processor emulator inside, and build OS
+1.20 in the Turbo emulator.  
 Once you have completed the OS 1.20 build, load the
 `adfs/AcornOS126.adl` disc image into RPCEmu (Disc &rarr; Floppy &rarr;
 Load Drive :0...).  Open drive :0, and copy all files from :0 into the
@@ -70,11 +69,9 @@ To build the disc images from the source, you will need:
 
 - a POSIX environment such as Linux, or MinGW on Windows
 - `unix2mac`, part of the `dos2unix` package
-- for DFS: [MMB Utils](https://github.com/sweharris/MMB_Utils) by
-  Stephen Harris, which require Perl
-- for ADFS:
-  [Acorn FS Utils](https://github.com/SteveFosdick/AcornFsUtils) by
-  Steve Fosdick, which require a C compiler
+- for DFS: [MMB Utils] [3] by Stephen Harris, which require Perl
+- for ADFS: [Acorn FS Utils] [4] by Steve Fosdick, which require a
+  C compiler
 
 Install the MMB Utils and Acorn FS Utils on your `PATH`, as needed.
 Then enter the respective `dfs/` or `adfs/` directory, and enter:
@@ -84,29 +81,31 @@ Then enter the respective `dfs/` or `adfs/` directory, and enter:
 Patching the \*command table
 ----------------------------
 
-With the space made available, it is now practical to add \*commands to
-the built-in OS command set.  New entries can be inserted in place of
-the NUL terminator byte, currently located at address &DF5B.
+With the space made available, it is now practical to add
+*star commands* to the built-in OS command set.  New entries can be
+appended in place of the NUL terminator byte, currently located at
+address &DF5B.
 
 Command table entries have the following form:
 
     NAME  addr_hi  addr_lo  aux
 
-Each entry begins with the name of the \*command, which must consist of
-one or more capital letters.  Other characters are not allowed.  
+Each entry begins with the name of the \*command, which consists of one
+or more capital letters.  Other characters are not allowed.  
 Note that built-in commands *and their abbreviated forms* take
-precedence over all other commands in the resolution chain.  It may
+precedence over all other commands in the service chain.  It may
 sometimes be wise to reject abbreviations; to do this create a pair of
 entries, one without the last letter which passes abbreviated calls down
-the chain (see below), preceding an entry that names the command in
-full.
+the chain (see below), preceding an entry naming the command in full.
 
 Following the name of the command is the high byte of the *action
 address* which the command interpreter will call.  The high byte always
-has bit 7 set to mark the end of the command name.  Bit 6 must be set
-too, to address constant OS memory; code in paged ROM can be reached via
-the extended vector entry points at &FF00..&FF4E.  The low byte of the
-address comes next.
+has bit 7 set to mark the end of the command name; this means that bit 6
+must be set as well, to address the constant OS memory between
+&C000..&FFFF.  It takes a jump from OS ROM code to reach routines in
+main memory (`JMIUSR` is one, described below).  Code in paged ROM can
+be reached via the [extended vector] [5] entry points at &FF00..&FF4E.
+The low byte of the address comes next.
 
 The entry ends with an auxiliary byte that controls the register values
 on entry to the \*command code.  Its value is passed to the routine in
@@ -170,7 +169,11 @@ More space at a pinch
 ---------------------
 
 If it comes to the crunch a little more room can be made by
-reassembling, minus some frills.  Delete lines 80..85 from `src/MOS34`:
+reassembling, minus some frills.  Delete lines 75..76 and 80..85
+from `src/MOS34`:
+
+     TAY
+     BEQ CLEARA ;branch always
 
      INY
      STAIY &0000 ;saves 24 ms
@@ -181,18 +184,33 @@ reassembling, minus some frills.  Delete lines 80..85 from `src/MOS34`:
 
 Modify line 225 of `src/MOS38` accordingly:
 
-     % 133 ;padding
+     % 136 ;padding
+
+Fifteen more bytes can be saved by reverting portions of source code to
+the original.  They are:
+
+- 7 bytes freeing &02CF..D1 for programs (in `src/MOS34`, `src/MOS38`)
+- 5 bytes calculating the cassette file size (in `src/MOS72`)
+- 3 bytes providing the OSWRSC entry (in `src/MOS99`).
 
 Known problems
 --------------
 
 - Certain \*commands in the Opus DDOS and Challenger ROMs corrupt the
-  stack, causing a crash on exit
-  ([patched disassemblies](http://regregex.bbcmicro.net/#features.bbc)
+  stack, causing a crash on exit ([patched disassemblies] [6]
   are available).
+- Acornsoft's Graphics Extension ROM (GXR) ignores all graphics
+  commands, as it contains hard-coded internal references to OS 1.20.
 - Many software titles, especially games, decrypt themselves using the
   contents of the OS ROM as a key.  These titles are incompatible
   with OS 1.26.
+
+[1]: http://mdfs.net/Archive/BBCMicro/2006/10/14/174712.htm
+[2]: https://www.4corn.co.uk/articles/65hostandmos/
+[3]: https://github.com/sweharris/MMB_Utils
+[4]: https://github.com/SteveFosdick/AcornFsUtils
+[5]: https://beebwiki.mdfs.net/Paged_ROM#Extended_vectors
+[6]: http://regregex.bbcmicro.net/#features.bbc
 
 * * *
 
