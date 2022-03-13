@@ -30,10 +30,10 @@ OS 1.26 has the following modifications:
 The free space is placed at the end of the \*command table, currently
 located at address &DF5A.
 
-DOGOIO
+STARGO
 ------
 
-The `DOGOIO` option in `src/MOSHdr` enables:
+The `STARGO` option in `src/MOSHdr` enables:
 
 - CFS/RFS implements OSARGS with A=1, Y=0 (read command line tail
   pointer)
