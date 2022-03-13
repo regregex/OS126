@@ -173,7 +173,24 @@ ROMCNP
 
  JSR OSROM
 
+ [ DOGOIO = &00
+ % 1 ;1 byte padding
+
+ARGSW
+ CMPIM &01
+ BNE UPARGS
+ CPYIM &00
+ BNE UPARGS
+ LDA TAILHI ;OSARGS A=1, Y=0 return command line tail
+ BEQ UPARG1 ;return *GO/CFS pointer if valid
+ JMP RETAIL
+UPARG1  ;A=0, C=1
+ ROLA  ;else restore A=1
+UPARGS  ;call upstream OSARGS
+ JMI ARGVEC
+ |
  % 21 ;21 bytes padding
+ ]
 
 FXBPUT  ;FX entry, C=1
  TXA ;A = character
@@ -254,7 +271,11 @@ OSFIND JMI FNDVEC
 OSBGPB JMI GPBVEC
 OSBPUT JMI BPTVEC
 OSBGET JMI BGTVEC
+ [ DOGOIO = &00
+OSARGS JMP ARGSW
+ |
 OSARGS JMI ARGVEC
+ ]
 OSFILE JMI FILVEC
 OSRDCH JMI RDCVEC
 OSASCI CMPIM MCR

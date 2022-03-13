@@ -434,6 +434,45 @@ RUN
 ;Note, is assumed here that A = 0 from GETFLN
 ;since LOADGO tests A
 
+ [ DOGOIO = &00
+ STY CLIRY ;use temp, stack is snooped by CompROMs during LOADGO
+ JSR LOADGO ;Load file from tape
+ LDY CLIRY
+RUNGO
+ TYA
+ PHA
+ JSR CLIXY
+ STX TAILLO ;save pointer to command line tail
+ TYA
+ EORIM MAGIC ;permute so a page of OS ROM becomes zero
+ STA TAILHI ;marking all other addresses valid
+ PLA
+ TAY ;set up registers to simulate entry from Acorn DFS
+ LDXIM &FF ;from filename comparison
+ SEC
+ [ TUBESW=0
+ BIT TUBE
+ BPL NOTUB1 ;No tube - jump to IO proc. address
+
+ LDA INFO +BKEXEC +&02 ;Check if execution address
+ AND INFO +BKEXEC +&03 ;of file is accross tube
+ CMPIM &FF
+ BNE RUNL1 ;Yes, set up tube call
+NOTUB1 LDAIM &01 ;enter with A=1, X=&FF, Y=arg offset, C=1
+ JMI INFO +BKEXEC ;No, just jump
+
+RUNL1 LDXIM INFO +BKEXEC ;Point to exec. address
+ LDYIM /(INFO +BKEXEC )
+ LDAIM TUBEX ;=> execute to tube
+ JMP TBINT1 ;Claim tube and jump to address
+ |
+ LDAIM &01 ;enter with A=1, X=&FF, Y=arg offset, C=1
+ JMI INFO +BKEXEC ;If no tube, just jump
+ ]
+ |
+ ;
+ ; DOGOIO = &FF
+ ;
  JSR LOADGO ;Load file from tape
  [ TUBESW=0
  BIT TUBE
@@ -452,6 +491,8 @@ RUNL1 LDXIM INFO +BKEXEC ;Point to exec. address
  |
  JMI INFO +BKEXEC ;If no tube, just jump
  ]
+ ]
+
 
 
  TTL C.F.S Main Routines - CAT

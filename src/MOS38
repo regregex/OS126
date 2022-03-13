@@ -130,7 +130,11 @@ COMTAB  ;table of MOS commands
 ;filter the wordless *commands off early
 ;rather than needlessly compare with each command;
 ;a substitute for testing the first char in code
+ [ DOGOIO = &00
+ & /JMICMD 
+ |
  & /JMIFSC 
+ ]
  = FSNAME ;enter with XY -> line
 
 ; OPT
@@ -143,7 +147,11 @@ COMTAB  ;table of MOS commands
 ; RUN
 ;slow but provides the computer with work, should not hold it up
  = "RUN"
+ [ DOGOIO = &00
+ & /JMICMD 
+ |
  & /JMIFSC 
+ ]
  
  = FSRUN ;enter with XY -> line
 
@@ -220,9 +228,62 @@ COMTAB  ;table of MOS commands
  & /BASIC
  = &01 ;bit 0 set for ILR2 to enter ROM with C=1
 
+ [ DOGOIO = &00
+; GOIO
+;comes before GO to trap *G.
+ = "GOIO"
+ & /GOIO
+
+ = /LANG ;assumed -ve; stored as default jump address
+
+; GO
+ = "GO"
+ & /GO
+
+ = /LANG ;assumed -ve; stored as default jump address
+
  = ZERO ;end of table
 
- % 124 ;padding
+ % 18 ;padding
+
+GO
+ CLC
+GOIO
+ PHP
+ LDXIM INFO +BKEXEC -FBLOCK ;stretch!
+ JSR CLRFB
+ STA INFO +BKEXEC +&01 ;default address = &00008000
+ JSR LSA ;replace with user address if present
+ PLP
+ BCC GETENV ;if *GO then use whole address
+ LDAIM &FF
+ STA INFO +BKEXEC +&02
+ STA INFO +BKEXEC +&03 ;else force an I/O processor address
+GETENV
+ JSR SKIPSP ;get next argument
+ BEQ GOTO ;if CR then point tail at it
+ CMPIM ";"
+ BNE GOTO ;if not semicolon then point tail at it
+ JSR SKIPSN ;else absorb semicolon once
+GOTO
+ JMP RUNGO ;set up tail from Y and enter user code
+
+RETAIL ;return command line tail to OSARGS control block
+;A=encoded high byte
+ EORIM MAGIC ;restore correct high byte
+ STAZX &01 ;store in 3MSB
+ LDA TAILLO
+ STAZX &00 ;store low byte in MSB
+ LDAIM &FF ;command line tail is always in I/O processor
+ STAZX &02 ;set high word to &FFFF
+ STAZX &03
+ LDAIM SEAL ;set conventional return value (conflicting documentation)
+ RTS
+ |
+ = ZERO ;end of table
+
+ % 129 ;padding
+ ]
 
 CLINT
  STX WORK +&00
@@ -262,7 +323,11 @@ CLIR  ;skip leading spaces and asterisks
  INY ;skip past /
  JSR CLIXY ;make XY -> after /
  LDAIM FSNOTA
+ [ DOGOIO = &00
+ BNE JMICMD ;[ALWAYS JUMP]
+ |
  BNE JMIFSC ;[ALWAYS JUMP]
+ ]
 NOTSL
 ; save pointer to rest of line
  STY CLIRY
@@ -361,6 +426,16 @@ CLIEND  ;entered here if command not recognised or does not exist
  LDA CLIRY  ;A = offset to command name
  JSR CLIXY2 ;make XY -> rest of line
  LDAIM FSNAME
+ [ DOGOIO = &00
+JMICMD
+;entry for FSC calls 2,3,4,(11)
+;cancel OSARGS 1 intercept, FS provides the tail pointer itself
+ PHA
+ LDAIM &00
+ STA TAILHI
+ PLA
+ ]
+
 JMIFSC
 
  JMI FSCVEC

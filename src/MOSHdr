@@ -3,4 +3,31 @@
         GBLL    $Tutu
 $Tutu   SETL    1=0
 
+DOGOIO *        &FF
+; ($00 => TRUE,  $FF => FALSE)
+
+; special labels for DOGOIO
+SEAL   *        &DC
+;The value to be returned in A by OSARGS A=1, Y=0
+;when trapped by MOS/CFS/RFS.
+;MSRM says to preserve A (p. H.3-5), i.e. A=1
+;however MOS 3.20 breaks the spec and returns A=&DC, mostly.
+;This is just a copy of the 3MSB of the pointer at X+1.
+;NAUG says A is undefined (p.253); other unofficial sources
+;suggest that implemented OSARGS calls *should not*
+;preserve A.
+
+MAGIC  *        &FF
+;Number of a page in the address space that will never
+;contain a command line.  Used as a sentinel value
+;to indicate when OSARGS 1 should be passed on to the FS.
+;Now that the BooBip OS RAM module exists, page &FF is the
+;most reliable choice.
+
+TAILLO *        &02D0
+TAILHI *        &02D1
+;Locations to store the command line tail pointer from *GO
+;and *RUN. Need not be adjacent.  Formerly buffer activity
+;flags that are free in OS 1.26.
+
         LNK     MOS00

@@ -467,14 +467,12 @@ RTM1
 WTM0
  RTS
 
-WITM  ;write interval time, C=1
- LDAIM STPW+&5-TIME
- BNE WTM ;[ALWAYS jump]
-; NEVER fall thru
 WATM  ;write absolute time
- LDA TIMESW
- EORIM &0F ;N.B. Z=0
+ LDY TIMESW
  CLC ;indicate WATM entry
+WITM  ;write interval time, C=1, Y=0
+ TYA
+ EORIM &0F ;assumes STPW-TIME = &A
 WTM
  PHA ;save TIMESW for WATM entry
  TAX
@@ -631,7 +629,7 @@ BUFESC  ;escape exit (C=1)
 ;flash keyboard LEDs while waiting for printer buffer to purge
 ;C=1
 SPFL
- [ FALSE=0
+ [ DOGOIO = &00
  PHA ;save FX call number
  TXA
  PHA ;save printer selection

@@ -401,8 +401,13 @@ AXCRTA PHA
  LDX ZTEMP
  JMP AXCRTC
 ;For TTX, fiddle the high address lines
-AXCRTB SBCIM &74 ; Carry already set here
- EORIM &20
+;on entry C=1, A=&7C..83, normal/wrapped screen address high byte, we need:
+;b5 = MA13 set, TTXVDU address mapping
+;b4 = MA12 clear, no HIRES wraparound
+;b3 = MA11 set, high RAM bank
+;b2 = MA10 indicates TTX wraparound, needed on-chip for cursor display
+;b7,6 unused
+AXCRTB SBCIM &54 ;map to &28..2F
 ;Write (A) to reg. (Y) of 6845
 ;& (X) to reg. (Y)+1
 
