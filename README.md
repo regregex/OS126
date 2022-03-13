@@ -20,15 +20,31 @@ OS 1.26 has the following modifications:
 - The paged ROM indirection routine places one byte less on the stack
 - OSBYTE calls to write to I/O memory avoid causing a dummy read cycle
   before the write, which upsets some hardware
-- Main memory is cleared faster on power up, or on a 'critical' BREAK	
+- Main memory is cleared faster on power up or 'critical' BREAK	
 - Locations &02CF, &02D0 and &02D1 are not touched
 - Locations &C4 and &CB are unused while the CFS or RFS is active
 - Semantically transparent optimisations
-- 123 bytes cleared in the main section + 1 existing = 124 bytes free
+- 128 bytes cleared in the main section + 1 existing = 129 bytes free
 - 21 bytes cleared in the top page
 
 The free space is placed at the end of the \*command table, currently
-located at address &DF5C.
+located at address &DF5A.
+
+DOGOIO
+------
+
+The `DOGOIO` option in `src/MOSHdr` enables:
+
+- CFS/RFS implements OSARGS with A=1, Y=0 (read command line tail
+  pointer)
+- CFS/RFS `*RUN` enters code with A=1, X=&FF, Y=argument offset, C=1
+- New commands: `*GO` / `*GOIO`
+  \[&lt;*address*&gt;\[`,`\]\] \[\[`;`\]&lt;*arguments*&gt;\]
+  which do both of the above
+- `*FX 5,n` flashes the keyboard LEDS while waiting for the printer
+- 18 + 1 bytes free
+
+The rest of this document describes vanilla OS 1.26.
 
 Build requirements: OS 1.26
 ---------------------------
@@ -60,7 +76,7 @@ build OS 1.26:
     *Quit
 
 The current ROM image has an MD5SUM of
-`bc779c4ee7826f8e44090d9bfd4f0ecf`.
+`c6eeeeaf6424b3939c852ac7e95f1211`.
 
 Build requirements: disc images
 ------------------------------
@@ -83,8 +99,8 @@ Patching the \*command table
 
 With the space made available, it is now practical to add
 *star commands* to the built-in OS command set.  New entries can be
-appended in place of the NUL terminator byte, currently located at
-address &DF5B.
+appended in place of the NUL terminator byte in `src/MOS38` line 283,
+currently located at address &DF59.
 
 Command table entries have the following form:
 
@@ -130,22 +146,22 @@ Remember to replace the terminator byte at the end of the new table!
 
 ### Useful addresses
 
-Pointing a \*command at `CLIEND` (&E05C) passes it to paged ROMs or the
+Pointing a \*command at `CLIEND` (&E05F) passes it to paged ROMs or the
 current filing system.  This is convenient for disposing of the
 abbreviated forms of a command; the most efficient auxiliary byte value
 is &FF.
 
 To bypass utility ROMs, an action address equal to `JMIFSC - &07`
-(&E065) sends the command straight to the filing system control vector,
+(&E068) sends the command straight to the filing system control vector,
 defined at &021E.
 
-`JMIUSR` (&E681) sends a \*command to USERV, defined at &0200.  An
+`JMIUSR` (&E684) sends a \*command to USERV, defined at &0200.  An
 auxiliary byte value of &01 emulates `*LINE`; other values (between &02
 and &7F inclusive) cause entry into the USERV routine with non-standard
 reason codes.  X and Y must contain the address of the first argument.
 
-In routines, `SKIPSP` (&E075) returns a non-space character in A, its
-offset in Y, and `EQ` if that character is CR.  `SKIPSN` (&E074) is the
+In routines, `SKIPSP` (&E078) returns a non-space character in A, its
+offset in Y, and `EQ` if that character is CR.  `SKIPSN` (&E077) is the
 same but ignores the current character by advancing Y over it.
 
 As an example, a command named `I` whose routine begins with
@@ -161,7 +177,7 @@ reach the NFS ROM.
 After making changes
 ---------------------
 
-Adjust the amount of padding at line 225 of `src/MOS38` to ensure that
+Adjust the amount of padding at line 285 of `src/MOS38` to ensure that
 `src/MOS76` assembles code up to &FBFF exactly.  The assembler will warn
 if the code overruns into the FRED area - but not if it falls short.
 
@@ -182,9 +198,9 @@ from `src/MOS34`:
      INY
      STAIY &0000 ;saves 4 ms
 
-Modify line 225 of `src/MOS38` accordingly:
+Modify line 285 of `src/MOS38` accordingly:
 
-     % 136 ;padding
+     % 141 ;padding
 
 Fifteen more bytes can be saved by reverting portions of source code to
 the original.  They are:
