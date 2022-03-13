@@ -629,7 +629,7 @@ BUFESC  ;escape exit (C=1)
 ;flash keyboard LEDs while waiting for printer buffer to purge
 ;C=1
 SPFL
- [ DOGOIO = &00
+ [ STARGO = &00
  PHA ;save FX call number
  TXA
  PHA ;save printer selection

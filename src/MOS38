@@ -130,7 +130,7 @@ COMTAB  ;table of MOS commands
 ;filter the wordless *commands off early
 ;rather than needlessly compare with each command;
 ;a substitute for testing the first char in code
- [ DOGOIO = &00
+ [ STARGO = &00
  & /JMICMD 
  |
  & /JMIFSC 
@@ -147,7 +147,7 @@ COMTAB  ;table of MOS commands
 ; RUN
 ;slow but provides the computer with work, should not hold it up
  = "RUN"
- [ DOGOIO = &00
+ [ STARGO = &00
  & /JMICMD 
  |
  & /JMIFSC 
@@ -228,7 +228,7 @@ COMTAB  ;table of MOS commands
  & /BASIC
  = &01 ;bit 0 set for ILR2 to enter ROM with C=1
 
- [ DOGOIO = &00
+ [ STARGO = &00
 ; GOIO
 ;comes before GO to trap *G.
  = "GOIO"
@@ -323,7 +323,7 @@ CLIR  ;skip leading spaces and asterisks
  INY ;skip past /
  JSR CLIXY ;make XY -> after /
  LDAIM FSNOTA
- [ DOGOIO = &00
+ [ STARGO = &00
  BNE JMICMD ;[ALWAYS JUMP]
  |
  BNE JMIFSC ;[ALWAYS JUMP]
@@ -426,7 +426,7 @@ CLIEND  ;entered here if command not recognised or does not exist
  LDA CLIRY  ;A = offset to command name
  JSR CLIXY2 ;make XY -> rest of line
  LDAIM FSNAME
- [ DOGOIO = &00
+ [ STARGO = &00
 JMICMD
 ;entry for FSC calls 2,3,4,(11)
 ;cancel OSARGS 1 intercept, FS provides the tail pointer itself

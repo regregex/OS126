@@ -3,15 +3,15 @@
         GBLL    $Tutu
 $Tutu   SETL    1=0
 
-DOGOIO *        &FF
+STARGO *        &FF
 ; ($00 => TRUE,  $FF => FALSE)
 
-; special labels for DOGOIO
+; special labels for STARGO
 SEAL   *        &DC
 ;The value to be returned in A by OSARGS A=1, Y=0
 ;when trapped by MOS/CFS/RFS.
 ;MSRM says to preserve A (p. H.3-5), i.e. A=1
-;however MOS 3.20 breaks the spec and returns A=&DC, mostly.
+;however MOS 3.20 breaks the spec and returns A=&DC, mainly.
 ;This is just a copy of the 3MSB of the pointer at X+1.
 ;NAUG says A is undefined (p.253); other unofficial sources
 ;suggest that implemented OSARGS calls *should not*

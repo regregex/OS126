@@ -434,7 +434,7 @@ RUN
 ;Note, is assumed here that A = 0 from GETFLN
 ;since LOADGO tests A
 
- [ DOGOIO = &00
+ [ STARGO = &00
  STY CLIRY ;use temp, stack is snooped by CompROMs during LOADGO
  JSR LOADGO ;Load file from tape
  LDY CLIRY
@@ -471,7 +471,7 @@ RUNL1 LDXIM INFO +BKEXEC ;Point to exec. address
  ]
  |
  ;
- ; DOGOIO = &FF
+ ; STARGO = &FF
  ;
  JSR LOADGO ;Load file from tape
  [ TUBESW=0
