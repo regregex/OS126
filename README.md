@@ -90,7 +90,7 @@ To build the disc images from the source, you will need:
   C compiler
 
 Install the MMB Utils and Acorn FS Utils on your `PATH`, as needed.
-Then enter the respective `dfs/` or `adfs/` directory, and enter:
+Then `cd` to the respective `dfs/` or `adfs/` directory, and enter:
 
     sh make_disk_images.sh
 
@@ -99,14 +99,14 @@ Patching the \*command table
 
 With the space made available, it is now practical to add
 *star commands* to the built-in OS command set.  New entries can be
-appended in place of the NUL terminator byte in `src/MOS38` line 283,
+appended in place of the NUL terminator byte at `src/MOS38` line 283,
 currently located at address &DF59.
 
 Command table entries have the following form:
 
     NAME  addr_hi  addr_lo  aux
 
-Each entry begins with the name of the \*command, which consists of one
+Each entry begins with the name of the command, which consists of one
 or more capital letters.  Other characters are not allowed.  
 Note that built-in commands *and their abbreviated forms* take
 precedence over all other commands in the service chain.  It may
@@ -136,7 +136,7 @@ the GSINIT system call will select the argument.
 
 OSCLI calls the action address with the carry flag clear (`CC`).  The
 zero flag is set (`EQ`) if and only if there are no arguments after the
-\*command.  
+command name.  
 The routine should exit with `RTS` to return from OSCLI.  Registers and
 flags on exit are forfeit, and code intercepting the OSCLI vector may
 alter them *en route* to the caller.  They are not passed to the second
@@ -215,8 +215,9 @@ Known problems
 - Certain \*commands in the Opus DDOS and Challenger ROMs corrupt the
   stack, causing a crash on exit ([patched disassemblies][6]
   are available).
-- Acornsoft's Graphics Extension ROM (GXR) ignores all graphics
-  commands, as it contains hard-coded internal references to OS 1.20.
+- Acornsoft's Graphics Extension ROM (GXR) 1.20 ignores all graphics
+  commands, as it contains hard-coded internal references to OS 1.20
+  (it too can be [reassembled][7] to work with this OS).
 - Many software titles, especially games, decrypt themselves using the
   contents of the OS ROM as a key.  These titles are incompatible
   with OS 1.26.
@@ -227,6 +228,7 @@ Known problems
 [4]: https://github.com/SteveFosdick/AcornFsUtils
 [5]: https://beebwiki.mdfs.net/Paged_ROM#Extended_vectors
 [6]: http://regregex.bbcmicro.net/#features.bbc
+[7]: https://github.com/regregex/GXR
 
 * * *
 
