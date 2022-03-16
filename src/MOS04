@@ -179,6 +179,30 @@ CLATXT LDXIM &00 ;TOPSCN:=BEGSCN
  STX CSY
  JMI JVEC
 
+RCHDEF
+ JSR CHADDR ;Read character definition
+ LDYIM &00 ;Address character (start of defn. now in ZTEMPC)
+PRABA LDAIY ZTEMPC ;Copy definition
+ INY
+ STAIY WARGS
+ CPYIM &08
+ BNE PRABA
+ RTS
+
+;Get the next line up,
+;test if wraparound
+;This is here as padding
+
+SUBROW PHA
+ TXA
+ SEC
+ SBC BYTROW
+ TAX
+ PLA
+ SBC BYTROW +&01
+ CMP BEGSCN
+ RTS
+
 CLASCA STAAX &3000 ;Modes 1-3 (20K)
  STAAX &3100
  STAAX &3200
@@ -262,31 +286,6 @@ CLASCE STAAX &7C00 ;Mode 7 (1k = TTX)
  INX
  BEQ ENSCRX
 RUNNER JMI JVEC
-
-RCHDEF
- JSR CHADDR ;Read character definition
- LDYIM &00 ;Address character (start of defn. now in ZTEMPC)
-PRABA LDAIY ZTEMPC ;Copy definition
- INY
- STAIY WARGS
- CPYIM &08
- BNE PRABA
- RTS
-
-;Get the next line up,
-;test if wraparound
-;This is here as padding
-
-SUBROW PHA
- TXA
- SEC
- SBC BYTROW
- TAX
- PLA
- SBC BYTROW +&01
- CMP BEGSCN
-FONT0
- RTS
 
 FONT
 ;

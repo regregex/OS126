@@ -255,8 +255,6 @@ ETBA LDAAY QEND-&07
  STAIY ZTEMPC
  DEY
  BPL ETBA
- RTS
- PLA
 ETCX RTS
 
 JMIV25
@@ -515,23 +513,4 @@ IEGD LDAAX GCSR
  SBCAX ORG
  STAAX GCSR
  RTS
-
-;DEL ($7F) Delete previous char
-
-DEL JSR BS ;Move back 1 character
- JSR ANOMQ
- BNE DELA
- LDX NCOLOR
- BEQ PTTXSP ;TTX space
- STA ZTEMPC ;(A)=0 from ANOMQ
- LDAIM HFMSB +&01 ;Point to hard font version of space
- STA ZTEMPC +&01
- JMP VDUPRB
-PTTXSP LDAIM &20 ;Print TTX space
- JMP PTTX ;OK as (X)=0
-DELA LDAIM &7F ;Point to DEL, only unprintable char. in hard font =$FF...$FF
- JSR CHADDR
- LDX BGCOLF ;Force this to be graphics background colour
- LDYIM &00 ;Mode is STORE
- JMP PRANC
  LNK MOS04

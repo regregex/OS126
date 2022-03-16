@@ -213,7 +213,7 @@ KCPLK2
 ; flip CAPITALS lock state
  EORIM CAPSL+INVERT
 ; set CAPITALS lock state and disable auto-repeat
- JMP KEYBD3
+ BCS KEYBD3 ;C=1 from CPXIM
 
 KCPLK1
 ; AT THIS POINT, WE HAVE A CHARACTER FOR RDCH

@@ -128,7 +128,6 @@ COMTAB  ;table of MOS commands
 
 ; default if first character is not alpha, |, . or /
 ;filter the wordless *commands off early
-;rather than needlessly compare with each command;
 ;a substitute for testing the first char in code
  [ STARGO = &00
  & /JMICMD 
@@ -145,6 +144,7 @@ COMTAB  ;table of MOS commands
  = FXOPT ;enter with Y = offset
 
 ; RUN
+;must come before ROM to trap *R.
 ;slow but provides the computer with work, should not hold it up
  = "RUN"
  [ STARGO = &00
@@ -244,7 +244,7 @@ COMTAB  ;table of MOS commands
 
  = ZERO ;end of table
 
- % 18 ;padding
+ % 28 ;padding
 
 GO
  CLC
@@ -282,7 +282,7 @@ RETAIL ;return command line tail to OSARGS control block
  |
  = ZERO ;end of table
 
- % 129 ;padding
+ % 139 ;padding
  ]
 
 CLINT

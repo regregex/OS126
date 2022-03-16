@@ -36,6 +36,7 @@ ENSCRO PHP  ;To preserve carry
  PLP  ;Restore the carry, to see which way to go
  BCC ENSCRQ
  DEC PCSY ;Scroll DOWN, so follow it down
+FONT0
 ENSCRX RTS ;May be referenced from MOS04
 ENSCRQ INC PCSY ;Scroll UP, so go up as well
  RTS
@@ -89,12 +90,12 @@ SSCRDA JSR SUBROW ;Get the address of the LH point of the next line up
 SSCRDB STA ZTEMP +&01 ;store transmit address
  STX ZTEMP
  STA ZTEMPB ;& MSB of next receive address (LSB is not changed)
- BCS SSCRDE ;c unchanged since just after SSCRDA
-SSCRDC JSR SSCRS ;Scroll slowly !
- JMP SSCRDD
+ BCC SSCRDC ;c unchanged since just after SSCRDA
 SSCRDE JSR SUBROW ;Get next line up
  BCC SSCRDC ;Wraparound occured ?, then slow scroll to be safe
  JSR XMIT ;Scroll fast is possible
+ BEQ SSCRDD ;xmit returns EQ
+SSCRDC JSR SSCRS ;Scroll slowly !
 SSCRDD LDA ZTEMPB ;MSB of next receive address
  LDX ZTEMP ;LSB of same
  STA ZMEMT +&01 ;Initialise next receive address
@@ -141,12 +142,12 @@ SSCRUA JSR ADDROW ;Get line below
 SSCRUE STA ZTEMP +&01 ;Transmit address
  STX ZTEMP
  STA ZTEMPB ;MSB of next receive addr., LSB is preserved
- BCC SSCRUB ;(c unchanged since just after SSCRUA)
-SSCRUC JSR SSCRS ;Scroll slowly
- JMP SSCRUD
+ BCS SSCRUC ;(c unchanged since just after SSCRUA)
 SSCRUB JSR ADDROW ;Get next line down
  BMI SSCRUC ;Wraparound ?, then scroll slowly to be safe
  JSR XMIT ;No?, then we can scroll fast
+ BEQ SSCRUD ;xmit returns EQ
+SSCRUC JSR SSCRS ;Scroll slowly
 SSCRUD LDA ZTEMPB ;Load next receive address
  LDX ZTEMP
  STA ZMEMT +&01 ;and store it
@@ -270,8 +271,6 @@ CLTLND STA CSX
 FAIL SEC
  RTS
 
-SYTADD
- STA CSY
 
 ;Addresses CSX,CSY to memory locn. on screen.
 ;Checks that CSX & CSY are in window
@@ -281,6 +280,7 @@ SYTADD
 ;For cursor display, follow immediately with
 ;JSR CSDSP
 
+SYTADD STA CSY
 TADDR LDX CSX ;Check window of CSX
  CPX TWLCOL ;Lower than LH margin ?
  BCC FAIL
@@ -431,6 +431,23 @@ PTWO LDAIY ZTEMPC
 
 ;TELETEXT mode
 
+;DEL ($7F) Delete previous char
+
+DEL JSR BS ;Move back 1 character
+ JSR ANOMQ
+ BNE DELA
+ LDX NCOLOR
+ BEQ PTTXSP ;TTX space
+ STA ZTEMPC ;(A)=0 from ANOMQ
+ LDAIM HFMSB +&01 ;Point to hard font version of space
+ STA ZTEMPC +&01
+ JMP VDUPRB
+DELA LDAIM &7F ;Point to DEL, only unprintable char. in hard font =$FF...$FF
+ JSR CHADDR
+ LDX BGCOLF ;Force this to be graphics background colour
+ LDYIM &00 ;Mode is STORE
+ JMP PRANC
+PTTXSP LDAIM &20 ;Print TTX space
 PTTX LDYIM &02 ;Transform these three wretched characters again
 PTTXA CMPAY TTXTB
  BEQ PTTXC
@@ -507,7 +524,10 @@ PSXTA LDAIM &00
 CHADDR ASLA  ;ZTEMPC:=8*CHAR. + MSB of font
  ROLA
  ROLA
- STA ZTEMPC ;Store LSB of addr. with bits 0-2 the low bits of the high addr.
+ TAX
+ ANDIM &F8
+ STA ZTEMPC ;Store LSB of addr.
+ TXA
  ANDIM &03 ;Get page number of character
  ROLA
  TAX
@@ -519,8 +539,5 @@ CHADDR ASLA  ;ZTEMPC:=8*CHAR. + MSB of font
  BEQ CHADDS ;Clear, thus hard font
  LDYAX PGSFNT -&01 ;Load soft font page number
 CHADDS STY ZTEMPC +&01 ;Store MSByte
- LDA ZTEMPC
- ANDIM &F8 ;LSB of address
- STA ZTEMPC
  RTS
  LNK MOS06
