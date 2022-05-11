@@ -244,7 +244,7 @@ COMTAB  ;table of MOS commands
 
  = ZERO ;end of table
 
- % 28 ;padding
+ % 27 ;padding
 
 GO
  CLC
@@ -282,7 +282,7 @@ RETAIL ;return command line tail to OSARGS control block
  |
  = ZERO ;end of table
 
- % 139 ;padding
+ % 138 ;padding
  ]
 
 CLINT
@@ -331,52 +331,52 @@ CLIR  ;skip leading spaces and asterisks
 NOTSL
 ; save pointer to rest of line
  STY CLIRY
-; reached command name
-; look for name in table
- LDXIM ZERO ;X=0 going to 1
-;fall through to CLICMP
-
-;
-; this code should intercept all strange commands,
-; including NULs and top-bit-set characters
-;
-CLISCN
-;
-; match so far, C=0
-;
- BNE CLINXC ;[mismatch, try next CLI command name]
-CLISTP
- INX ;step to next/first CLI command character
- LDAIY WORK ;get next user character
-;CLICMP
- INY ;step to next user character
- CMPIM "." ;force match ?
- BEQ CLISKP ;[forced match, search for terminator, C=1]
- JSR CAPS ;CS if not alpha incl. if -ve
- ANDIM &5F ;equate cases and also clear bit 7
- EORAX COMTAB -&01;compare
- BCC CLISCN ;[alpha]
- BMI CLINXS ;C=1; was CLIMFN but divert for INX;INX
- CLC ;user word shorter than CLI command, skip to next
-CLINXC
- LDY CLIRY ;restore Y (Y points to user command name)
- INY ;adjust for following DEY
-CLINXS  ;C=1
- DEY ;Y points to character after user word
-;[forced match by .]
+; X=&FF going to 0, point to start of table
+ LDXIM &FF
+CLIRST ; restart search at next keyword
+ LDY CLIRY ; reset pointer to start of user word
+ DEY ;cancel first INY
+CLIADV ; compare characters
+ INY ; advance user word pointer
+ LDAIY WORK ; fetch user character
+ JSR CAPS ; set C=1 iff alpha [not caps]
+ ANDIM &5F ; equate cases and also clear bit 7
+ INX ; advance table pointer or skip aux byte
+ EORAX COMTAB ; set b7 from table and compare b6..0
+ ;N Z C meaning                 action          may test/absorb "."
+ ;0 0 0 mismatch                skip            y (won't match ".")
+ ;0 0 1 end of user word/abbr.  skip/accept     y
+ ;0 1 0 characters match        advance         n
+ ;0 1 1 end of user word/abbr.  skip/accept     y
+ ;1 0 0 end of keyword          skip            n
+ ;1 0 1 end of both words       accept          n
+ BCS CLIFIN ; if C=1, test N
+ ;x x 0
+ BEQ CLIADV ; if Z=1 C=0 then characters match, advance
+ ;x 0 0
+CLIFIN
+ ;x 0 0 / x x 1
+ BMI CLISKP ; if N=1 then skip or set up X and accept
+ ;0 0 0 / 0 x 1
+ LDAIY WORK ; restore user character
+ INY ; leave pointer advanced past dot
+ EORIM ".":EOR:&FF ; if it was ".", now A=&FF
+ CMPIM &FF ; C=0 if mismatch, skip; C=1 if abbreviation, accept
 CLISKP
- INX ;N.B. X points to character +2 after one to be compared
- LDAAX COMTAB -&02
+ ;0 0 0 / 0 x 1 / 1 0 x
+ INX ; skip high byte of action address
+CLIALI ; align to keyword terminator
+ INX ; advance table pointer or skip low byte of action address
+ LDAAX COMTAB -&02 ; test table byte at original offset
  BEQ CLIEND ;[no more CLI command names]
- BPL CLISKP ;[not reached address hi-byte]
- INX ;skip address lo-byte
- BCC CLISTP ;if mismatch then skip to next command
-CLIMFN  ;full name match
+ BPL CLIALI ;[not reached address hi-byte]
+ BCC CLIRST ;if C=0, compare with next keyword
+;CLIMFN  ;full name match
 ; found CLI command match
 ; construct JMI hi-byte value to command processing code
  PHA
 ; construct JMI lo-byte value to command processing code
- LDAAX COMTAB -&02
+ LDAAX COMTAB -&01
  PHA
 ; skip spaces after command name
  JSR SKIPSP
@@ -388,11 +388,11 @@ CLIMFN  ;full name match
 
 
 CLIXYA  ;conditionally make XY -> rest of line
- LDAAX COMTAB -&01
+ LDAAX COMTAB
  BMI CLIXY0 ;[keep Y = offset of rest of line from WORK]
 CLIXY  ;make XY -> rest of command line
  TYA ;A = offset of rest of line
- LDYAX COMTAB -&01 ;Y := function code
+ LDYAX COMTAB
 CLIXY2
  CLC
  ADC WORK ;N.B. C=1 => carry
