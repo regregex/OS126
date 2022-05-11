@@ -24,7 +24,7 @@ OS 1.26 has the following modifications:
 - Locations &02CF, &02D0 and &02D1 are not touched
 - Locations &C4 and &CB are unused while the CFS or RFS is active
 - Semantically transparent optimisations
-- 138 bytes cleared in the main section + 1 existing = 139 bytes free
+- 137 bytes cleared in the main section + 1 existing = 138 bytes free
 - 21 bytes cleared in the top page
 
 The free space is placed at the end of the \*command table, currently
@@ -41,8 +41,8 @@ The `STARGO` option in `src/MOSHdr` enables:
 - New commands: `*GO` / `*GOIO`
   \[&lt;*address*&gt;\[`,`\]\] \[\[`;`\]&lt;*arguments*&gt;\]
   which do both of the above
-- `*FX 5,n` flashes the keyboard LEDS while waiting for the printer
-- 28 + 1 bytes free
+- `*FX 5,n` flashes the keyboard LEDs while waiting for the printer
+- 27 + 1 bytes free
 
 The rest of this document describes vanilla OS 1.26.
 
@@ -76,7 +76,7 @@ build OS 1.26:
     *Quit
 
 The current ROM image has an MD5SUM of
-`f34f2a91019d2c5b779182f5000f37d4`.
+`53a6b89f25e64614a94e81e4762ea86b`.
 
 Build requirements: disc images
 ------------------------------
@@ -86,7 +86,7 @@ To build the disc images from the source, you will need:
 - a POSIX environment such as Linux, or MinGW on Windows
 - `unix2mac`, part of the `dos2unix` package
 - for DFS: [MMB Utils][3] by Stephen Harris, which require Perl
-- for ADFS: [Acorn FS Utils][4] by Steve Fosdick, which require a
+- for ADFS: [Acorn FS Utils][4] by COEUS, which require a
   C compiler
 
 Install the MMB Utils and Acorn FS Utils on your `PATH`, as needed.
@@ -120,8 +120,8 @@ has bit 7 set to mark the end of the command name; this means that bit 6
 must be set as well, to address the constant OS memory between &C000 and
 &FFFF.  It takes a jump from OS ROM code to reach routines in main
 memory (`JMIUSR` is one, described below).  Code in paged ROM can be
-reached via the [extended vector][5] entry points at &FF00..&FF4E.
-The low byte of the address comes next.
+reached via the [extended vector][5] entry points at &FF00..&FF4E, which
+must be set up before use.  The low byte of the address comes next.
 
 The entry ends with an auxiliary byte that controls the register values
 on entry to the \*command code.  Its value is passed to the routine in
@@ -200,7 +200,7 @@ from `src/MOS34`:
 
 Modify line 285 of `src/MOS38` accordingly:
 
-     % 151 ;padding
+     % 150 ;padding
 
 Fifteen more bytes can be saved by reverting portions of source code to
 the original.  They are:
