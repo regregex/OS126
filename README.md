@@ -24,11 +24,11 @@ OS 1.26 has the following modifications:
 - Locations &02CF, &02D0 and &02D1 are not touched
 - Locations &C4 and &CB are unused while the CFS or RFS is active
 - Semantically transparent optimisations
-- 137 bytes cleared in the main section + 1 existing = 138 bytes free
+- 140 bytes cleared in the main section + 1 existing = 141 bytes free
 - 21 bytes cleared in the top page
 
 The free space is placed at the end of the \*command table, currently
-located at address &DF51.
+located at address &DF4E.
 
 STARGO
 ------
@@ -42,7 +42,7 @@ The `STARGO` option in `src/MOSHdr` enables:
   \[&lt;*address*&gt;\[`,`\]\] \[\[`;`\]&lt;*arguments*&gt;\]
   which do both of the above
 - `*FX 5,n` flashes the keyboard LEDs while waiting for the printer
-- 27 + 1 bytes free
+- 30 + 1 bytes free
 
 The rest of this document describes vanilla OS 1.26.
 
@@ -76,7 +76,7 @@ build OS 1.26:
     *Quit
 
 The current ROM image has an MD5SUM of
-`53a6b89f25e64614a94e81e4762ea86b`.
+`61fd519fff3df47131e0e1e9ee0ac23c`.
 
 Build requirements: disc images
 ------------------------------
@@ -100,7 +100,7 @@ Patching the \*command table
 With the space made available, it is now practical to add
 *star commands* to the built-in OS command set.  New entries can be
 appended in place of the NUL terminator byte at `src/MOS38` line 283,
-currently located at address &DF50.
+currently located at address &DF4D.
 
 Command table entries have the following form:
 
@@ -200,7 +200,7 @@ from `src/MOS34`:
 
 Modify line 285 of `src/MOS38` accordingly:
 
-     % 150 ;padding
+     % 153 ;padding
 
 Fifteen more bytes can be saved by reverting portions of source code to
 the original.  They are:
