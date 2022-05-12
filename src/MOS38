@@ -244,7 +244,7 @@ COMTAB  ;table of MOS commands
 
  = ZERO ;end of table
 
- % 27 ;padding
+ % 30 ;padding
 
 GO
  CLC
@@ -282,7 +282,7 @@ RETAIL ;return command line tail to OSARGS control block
  |
  = ZERO ;end of table
 
- % 138 ;padding
+ % 141 ;padding
  ]
 
 CLINT
@@ -392,7 +392,7 @@ CLIXYA  ;conditionally make XY -> rest of line
  BMI CLIXY0 ;[keep Y = offset of rest of line from WORK]
 CLIXY  ;make XY -> rest of command line
  TYA ;A = offset of rest of line
- LDYAX COMTAB
+ LDYAX COMTAB ;Y := function code
 CLIXY2
  CLC
  ADC WORK ;N.B. C=1 => carry

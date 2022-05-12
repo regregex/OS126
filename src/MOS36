@@ -156,21 +156,7 @@ NRSI  ;suppress RS423 input
  RTS
 
 
-DEFIRQ  ;default IRQ routine
- CLD
- LDA TEMPA
- PHA
- TXA
- PHA
- TYA
- PHA
-;
-; schedule return from interrupt
-;
- LDAIM /(IRQ0-&01)
- PHA
- LDAIM IRQ0-&01
- PHA
+VAT
 ;
 ; indicate in DEFIRQ
 ;
@@ -728,6 +714,18 @@ JUNKIRQ JMP UNKIRQ ;IRQ not identified
 
 
 
+DEFIRQ  ;default IRQ routine
+ CLD
+ LDA TEMPA
+ PHA
+ TXA
+ PHA
+ TYA
+ PHA
+;
+; schedule return from interrupt
+;
+ JSR VAT
 IRQ0  ;return from interrupt restoring registers
  PLA
  TAY
