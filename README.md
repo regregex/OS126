@@ -218,6 +218,9 @@ Known problems
 - Acornsoft's Graphics Extension ROM (GXR) 1.20 ignores all graphics
   commands, as it contains hard-coded internal references to OS 1.20
   (it too can be [reassembled][7] to work with this OS).
+- Slogger's Tape to Challenger 3 ROM (T2C3) jumps to the hard-coded
+  address of the OSBYTE handler in OS 1.20, and crashes after loading
+  the first file of the tape program. (Patch &8F15 = `JMP &E79D`.)
 - Many software titles, especially games, decrypt themselves using the
   contents of the OS ROM as a key.  These titles are incompatible
   with OS 1.26.
