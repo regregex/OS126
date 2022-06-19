@@ -632,7 +632,6 @@ SELANG  ;FX entry point, entered with C=1 (for tube)
 ; found language ROM
 ; select language ROM
  PHP ;save entry type (present in C)
- STX LROMID
  JSR STXROM
 ; output ROM message
  LDAIM /(LANG )
@@ -646,6 +645,9 @@ SELANG  ;FX entry point, entered with C=1 (for tube)
 ; enter language
 ;
  PLP ;restore entry type into C
+ ;preserve BRK handler until all printing done
+ LDA ROMID
+ STA LROMID
  LDAIM LGENTR ;entry reason
  BIT TUBEM
  BMI TLANG ;[tube active]
