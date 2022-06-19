@@ -10,13 +10,17 @@ OS 1.26 has the following modifications:
 - An OSWRSC entry point is provided at &FFB3
 - The OSFILE call handler in the Cassette and ROM filing systems (CFS,
   RFS) [always returns][1] the correct length of the file to the
-  control block
+  control block (thanks to John Kortink)
 - Calling `*RUN` on a cassette or ROM file [does not overwrite][1]
-  arbitrary I/O addresses after loading the file
+  arbitrary I/O addresses after loading the file (thanks to John
+  Kortink)
 - In the `VDU 21` state, cursor motion codes are only sent to the
   printer while `VDU 2` applies; the parameter of `VDU 1` is printed
   once
 - `VDU 28` checks the parameters correctly
+- An error raised while printing the language banner [aborts the change
+  of language, and is handled by the current language][2] (thanks to
+  J.G.Harston)
 - The paged ROM indirection routine places one byte less on the stack
 - OSBYTE calls to write to I/O memory avoid causing a dummy read cycle
   before the write, which upsets some hardware
@@ -24,11 +28,11 @@ OS 1.26 has the following modifications:
 - Locations &02CF, &02D0 and &02D1 are not touched
 - Locations &C4 and &CB are unused while the CFS or RFS is active
 - Semantically transparent optimisations
-- 140 bytes cleared in the main section + 1 existing = 141 bytes free
+- 138 bytes cleared in the main section + 1 existing = 139 bytes free
 - 21 bytes cleared in the top page
 
 The free space is placed at the end of the \*command table, currently
-located at address &DF4E.
+located at address &DF50.
 
 STARGO
 ------
@@ -39,10 +43,10 @@ The `STARGO` option in `src/MOSHdr` enables:
   pointer)
 - CFS/RFS `*RUN` enters code with A=1, X=&FF, Y=command tail offset, C=1
 - New commands: `*GO` / `*GOIO`
-  \[&lt;*address*&gt;\[`,`\]\] \[\[`;`\]&lt;*arguments*&gt;\]
+  \[&lt;*address*&gt;\]\[`,`\] \[`;`\]\[&lt;*arguments*&gt;\]
   which do both of the above
 - `*FX 5,n` flashes the keyboard LEDs while waiting for the printer
-- 30 + 1 bytes free
+- 28 + 1 bytes free
 
 The rest of this document describes vanilla OS 1.26.
 
@@ -60,7 +64,7 @@ running under RISC OS 2 or 3.x.
 
 On a Windows PC it may be convenient to emulate RISC OS itself along
 with the Turbo, to build the ROM image on the local file system.  An
-[article on 4corn][2] provides detailed instructions on how to install
+[article on 4corn][3] provides detailed instructions on how to install
 RPCEmu, assemble a Turbo second processor emulator inside, and build OS
 1.20 in the Turbo emulator.  
 Once you have completed the OS 1.20 build, load the
@@ -76,7 +80,7 @@ build OS 1.26:
     *Quit
 
 The current ROM image has an MD5SUM of
-`61fd519fff3df47131e0e1e9ee0ac23c`.
+`bcc968b959cc5089c288125e65dfcdca`.
 
 Build requirements: disc images
 ------------------------------
@@ -85,8 +89,8 @@ To build the disc images from the source, you will need:
 
 - a POSIX environment such as Linux, or MinGW on Windows
 - `unix2mac`, part of the `dos2unix` package
-- for DFS: [MMB Utils][3] by Stephen Harris, which require Perl
-- for ADFS: [Acorn FS Utils][4] by COEUS, which require a
+- for DFS: [MMB Utils][4] by Stephen Harris, which require Perl
+- for ADFS: [Acorn FS Utils][5] by COEUS, which require a
   C compiler
 
 Install the MMB Utils and Acorn FS Utils on your `PATH`, as needed.
@@ -100,7 +104,7 @@ Patching the \*command table
 With the space made available, it is now practical to add
 *star commands* to the built-in OS command set.  New entries can be
 appended in place of the NUL terminator byte at `src/MOS38` line 283,
-currently located at address &DF4D.
+currently located at address &DF4F.
 
 Command table entries have the following form:
 
@@ -120,7 +124,7 @@ has bit 7 set to mark the end of the command name; this means that bit 6
 must be set as well, to address the constant OS memory between &C000 and
 &FFFF.  It takes a jump from OS ROM code to reach routines in main
 memory (`JMIUSR` is one, described below).  Code in paged ROM can be
-reached via the [extended vector][5] entry points at &FF00..&FF4E, which
+reached via the [extended vector][6] entry points at &FF00..&FF4E, which
 must be set up before use.  The low byte of the address comes next.
 
 The entry ends with an auxiliary byte that controls the register values
@@ -200,7 +204,7 @@ from `src/MOS34`:
 
 Modify line 285 of `src/MOS38` accordingly:
 
-     % 153 ;padding
+     % 151 ;padding
 
 Fifteen more bytes can be saved by reverting portions of source code to
 the original.  They are:
@@ -213,25 +217,26 @@ Known problems
 --------------
 
 - Certain \*commands in the Opus DDOS and Challenger ROMs corrupt the
-  stack, causing a crash on exit ([patched disassemblies][6]
+  stack, causing a crash on exit ([patched disassemblies][7]
   are available).
 - Acornsoft's Graphics Extension ROM (GXR) 1.20 ignores all graphics
   commands, as it contains hard-coded internal references to OS 1.20
-  (it too can be [reassembled][7] to work with this OS).
+  (it too can be [reassembled][8] to work with this OS).
 - Slogger's Tape to Challenger 3 ROM (T2C3) jumps to the hard-coded
-  address of the OSBYTE handler in OS 1.20, and crashes after loading
-  the first file of the tape program. (Patch &8F15 = `JMP &E79D`.)
+  address of the OSBYTE handler in OS 1.20, causing a crash on the next
+  call to OSBYTE. (Patch &8F15 = `JMP &E79D`.)
 - Many software titles, especially games, decrypt themselves using the
   contents of the OS ROM as a key.  These titles are incompatible
   with OS 1.26.
 
 [1]: http://mdfs.net/Archive/BBCMicro/2006/10/14/174712.htm
-[2]: https://www.4corn.co.uk/articles/65hostandmos/
-[3]: https://github.com/sweharris/MMB_Utils
-[4]: https://github.com/SteveFosdick/AcornFsUtils
-[5]: https://beebwiki.mdfs.net/Paged_ROM#Extended_vectors
-[6]: http://regregex.bbcmicro.net/#features.bbc
-[7]: https://github.com/regregex/GXR
+[2]: https://stardot.org.uk/forums/viewtopic.php?p=358510#p358510
+[3]: https://www.4corn.co.uk/articles/65hostandmos/
+[4]: https://github.com/sweharris/MMB_Utils
+[5]: https://github.com/SteveFosdick/AcornFsUtils
+[6]: https://beebwiki.mdfs.net/Paged_ROM#Extended_vectors
+[7]: http://regregex.bbcmicro.net/#features.bbc
+[8]: https://github.com/regregex/GXR
 
 * * *
 
