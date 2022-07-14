@@ -37,7 +37,8 @@ located at address &DF50.
 STARGO
 ------
 
-The `STARGO` option in `src/MOSHdr` enables:
+To demonstrate how the spare ROM area can be reapplied, the `STARGO`
+option in `src/MOSHdr` enables:
 
 - CFS/RFS implements OSARGS with A=1, Y=0 (read command line tail
   pointer)
@@ -161,11 +162,13 @@ defined at &021E.
 
 `JMIUSR` (&E685) sends a \*command to USERV, defined at &0200.  An
 auxiliary byte value of &01 emulates `*LINE`; other values (between &02
-and &7F inclusive) cause entry into the USERV routine with non-standard
-reason codes.  X and Y must contain the address of the first argument.
+and &DF inclusive) cause entry into the USERV routine with non-standard
+reason codes.
 
-In routines, `SKIPSP` (&E079) returns a non-space character in A, its
-offset in Y, and `EQ` if that character is CR.  `SKIPSN` (&E078) is the
+In a routine handling the new command, `SKIPSP` (&E079) may be passed
+the current offet into the command in Y.  It returns a non-space
+character in A, its offset in Y, and `EQ` if that character is CR.
+`SKIPSN` (&E078) is the
 same but ignores the current character by advancing Y over it.
 
 As an example, a command named `I` whose routine begins with
@@ -209,34 +212,45 @@ Modify line 285 of `src/MOS38` accordingly:
 Fifteen more bytes can be saved by reverting portions of source code to
 the original.  They are:
 
-- 7 bytes freeing &02CF..D1 for programs (in `src/MOS34`, `src/MOS38`)
 - 5 bytes calculating the cassette file size (in `src/MOS72`)
+- 7 bytes freeing &02CF..D1 for programs (in `src/MOS34`, `src/MOS38`)
 - 3 bytes providing the OSWRSC entry (in `src/MOS99`).
+
+Applying the first two changes yields 17 bytes total and results in
+[OS 1.25][7], available separately.  The source code in this archive
+is manifolded and builds OS 1.20, 1.25, 1.26 and STARGO according to the
+choice of header file.  A conditional assembly reference to `MOS125`
+introduces each variation from the standard code.  
+Also in this distribution is OS 1.26 patched for [GoSDC][8] tape
+support, and a copy of Acornsoft's Graphics Extension ROM suitable for
+all the modified OS ROMs. 
 
 Known problems
 --------------
 
 - Certain \*commands in the Opus DDOS and Challenger ROMs corrupt the
-  stack, causing a crash on exit ([patched disassemblies][7]
+  stack, causing a crash on exit ([patched disassemblies][9]
   are available).
 - Acornsoft's Graphics Extension ROM (GXR) 1.20 ignores all graphics
   commands, as it contains hard-coded internal references to OS 1.20
-  (it too can be [reassembled][8] to work with this OS).
-- Slogger's Tape to Challenger 3 ROM (T2C3) jumps to the hard-coded
+  (it too can be [reassembled][10] to work with this OS).
+- Slogger's Tape to Challenger 3 ROM (T2C3) 1.00 jumps to the hard-coded
   address of the OSBYTE handler in OS 1.20, causing a crash on the next
   call to OSBYTE. (Patch &8F15 = `JMP &E79D`.)
 - Many software titles, especially games, decrypt themselves using the
   contents of the OS ROM as a key.  These titles are incompatible
   with OS 1.26.
 
-[1]: http://mdfs.net/Archive/BBCMicro/2006/10/14/174712.htm
-[2]: https://stardot.org.uk/forums/viewtopic.php?p=358510#p358510
-[3]: https://www.4corn.co.uk/articles/65hostandmos/
-[4]: https://github.com/sweharris/MMB_Utils
-[5]: https://github.com/SteveFosdick/AcornFsUtils
-[6]: https://beebwiki.mdfs.net/Paged_ROM#Extended_vectors
-[7]: http://regregex.bbcmicro.net/#features.bbc
-[8]: https://github.com/regregex/GXR
+[1]:  http://mdfs.net/Archive/BBCMicro/2006/10/14/174712.htm
+[2]:  https://stardot.org.uk/forums/viewtopic.php?p=358510#p358510
+[3]:  https://www.4corn.co.uk/articles/65hostandmos/
+[4]:  https://github.com/sweharris/MMB_Utils
+[5]:  https://github.com/SteveFosdick/AcornFsUtils
+[6]:  https://beebwiki.mdfs.net/Paged_ROM#Extended_vectors
+[7]:  http://regregex.bbcmicro.net/#prog.os126
+[8]:  https://www.zeridajh.org/hardware/gosdc/index.html
+[9]:  http://regregex.bbcmicro.net/#features.bbc
+[10]: https://github.com/regregex/GXR
 
 * * *
 
