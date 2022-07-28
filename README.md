@@ -212,28 +212,30 @@ Modify line 285 of `src/MOS38` accordingly:
 Fifteen more bytes can be saved by reverting portions of source code to
 the original.  They are:
 
+- 3 bytes providing the OSWRSC entry (in `src/MOS99`).
 - 5 bytes calculating the cassette file size (in `src/MOS72`)
 - 7 bytes freeing &02CF..D1 for programs (in `src/MOS34`, `src/MOS38`)
-- 3 bytes providing the OSWRSC entry (in `src/MOS99`).
 
-Applying the first two changes yields 17 bytes total and results in
+Applying the first three changes yields 20 bytes total and results in
 [OS 1.25][7], available separately.  The source code in this archive
-is manifolded and builds OS 1.20, 1.25, 1.26 and STARGO according to the
-choice of header file.  A conditional assembly reference to `MOS125`
+is manifolded and builds OS 1.20, 1.25, 1.26, STARGO and *NOSP*
+according to the choice of header file: NOSP eliminates a further 321
+bytes of speech processor driver code, based on J.G.Harston's
+[patch][8].  A conditional assembly reference to `MOS125` or `NOSP`
 introduces each variation from the standard code.  
-Also in this distribution is OS 1.26 patched for [GoSDC][8] tape
-support, and a copy of Acornsoft's Graphics Extension ROM suitable for
-all the modified OS ROMs. 
+Also in this distribution is OS 1.26 patched for [GoSDC][9] tape
+emulation support, and a copy of Acornsoft's Graphics Extension ROM
+suitable for all the modified OS ROMs. 
 
 Known problems
 --------------
 
 - Certain \*commands in the Opus DDOS and Challenger ROMs corrupt the
-  stack, causing a crash on exit ([patched disassemblies][9]
+  stack, causing a crash on exit ([patched disassemblies][10]
   are available).
 - Acornsoft's Graphics Extension ROM (GXR) 1.20 ignores all graphics
   commands, as it contains hard-coded internal references to OS 1.20
-  (it too can be [reassembled][10] to work with this OS).
+  (it too can be [reassembled][11] to work with this OS).
 - Slogger's Tape to Challenger 3 ROM (T2C3) 1.00 jumps to the hard-coded
   address of the OSBYTE handler in OS 1.20, causing a crash on the next
   call to OSBYTE. (Patch &8F15 = `JMP &E79D`.)
@@ -248,9 +250,10 @@ Known problems
 [5]:  https://github.com/SteveFosdick/AcornFsUtils
 [6]:  https://beebwiki.mdfs.net/Paged_ROM#Extended_vectors
 [7]:  http://regregex.bbcmicro.net/#prog.os126
-[8]:  https://www.zeridajh.org/hardware/gosdc/index.html
-[9]:  http://regregex.bbcmicro.net/#features.bbc
-[10]: https://github.com/regregex/GXR
+[8]:  https://mdfs.net/System/ROMs/AcornMOS/BBC_JGH/MOSnosp.src
+[9]:  https://www.zeridajh.org/hardware/gosdc/index.html
+[10]: http://regregex.bbcmicro.net/#features.bbc
+[11]: https://github.com/regregex/GXR
 
 * * *
 
