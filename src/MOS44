@@ -503,8 +503,7 @@ CESCPC  ;clear system escape flag
 CESCPS  ;set system escape flag (N.B. C=1)
  ROR ESCFLG
  BIT TUBEM
- BMI TESC ;[tube active]
- RTS
+ BPL TESCO ;[tube inactive]
 ;
 TESC
  JMP TBESC ;tube escape
@@ -549,6 +548,7 @@ TYATAX  ;used by TXBAUD, RXBAUD, FSPC, FMRK
  TYA
 BADEVT
  TAX ;X := old value (bad events appear disabled)
+TESCO
  RTS
 
 
