@@ -1,8 +1,8 @@
-OS 1.26
-=======
+OS 1.26 / NOSP
+==============
 
-This repository contains source code for OS 1.26, a copy of Acorn OS
-1.20 with some bugs fixed and a large space cleared for further
+This repository contains source code for OS 1.26 / NOSP, a copy of Acorn
+OS 1.20 with some bugs fixed and a large space cleared for further
 patching.
 
 OS 1.26 has the following modifications:
@@ -28,20 +28,24 @@ OS 1.26 has the following modifications:
 - Locations &02CF, &02D0 and &02D1 are not touched
 - Locations &C4 and &CB are unused while the CFS or RFS is active
 - Semantically transparent optimisations
-- 139 bytes cleared in the main section + 1 existing = 140 bytes free
+- All speech processor driver code is removed (thanks to a [patch][3]
+  by J.G.Harston)
+- RFS file searching and `*CAT` terminate when an RFS ROM is present
+  in slot 0 (thanks to J.G.Harston)
+- 460 bytes cleared in the main section + 1 existing = 461 bytes free
 - 21 bytes cleared in the top page
 
 The free space is placed at the end of the \*command table, currently
-located at address &DF50.
+located at address &DECF.
 
-OS 1.26 / NOSP
---------------
+OS 1.26
+-------
 
-In addition to the above, the [NOSP branch][3] strips speech processor
-support and makes 483 bytes of the ROM available in total.
+The [main branch][4] retains speech processor support and makes 161
+bytes of the ROM available in total. 
 
-STARGO
-------
+STARGO / NOSP
+-------------
 
 To demonstrate how the spare ROM area can be reapplied, the `STARGO`
 option in `src/MOSHdr` enables:
@@ -53,9 +57,9 @@ option in `src/MOSHdr` enables:
   \[&lt;*address*&gt;\]\[`,`\] \[`;`\]\[&lt;*arguments*&gt;\]
   which do both of the above
 - `*FX 5,n` flashes the keyboard LEDs while waiting for the printer
-- 28 + 1 bytes free
+- 350 + 1 bytes free
 
-The rest of this document describes vanilla OS 1.26.
+The rest of this document describes vanilla OS 1.26 / NOSP.
 
 Build requirements: OS 1.26
 ---------------------------
@@ -71,7 +75,7 @@ running under RISC OS 2 or 3.x.
 
 On a Windows PC it may be convenient to emulate RISC OS itself along
 with the Turbo, to build the ROM image on the local file system.  An
-[article on 4corn][4] provides detailed instructions on how to install
+[article on 4corn][5] provides detailed instructions on how to install
 RPCEmu, assemble a Turbo second processor emulator inside, and build OS
 1.20 in the Turbo emulator.  
 Once you have completed the OS 1.20 build, load the
@@ -79,7 +83,7 @@ Once you have completed the OS 1.20 build, load the
 Load Drive :0...).  Open drive :0, and copy all files from :0 into the
 `Emu6502.HostEmuOS` directory *window* to replace the OS 1.20 source
 files.  Then enter these commands into the existing command window to
-build OS 1.26:
+build OS 1.26, assembled in a file named `nosp`:
 
     *Quit
     *EmulateTurbo
@@ -87,7 +91,7 @@ build OS 1.26:
     *Quit
 
 The current ROM image has an MD5SUM of
-`52c263c6c97c6bdaf956c442857502b8`.
+`bd98a5444fb4bec810fe53bbf0c8ebec`.
 
 Build requirements: disc images
 ------------------------------
@@ -96,8 +100,8 @@ To build the disc images from the source, you will need:
 
 - a POSIX environment such as Linux, or MinGW on Windows
 - `unix2mac`, part of the `dos2unix` package
-- for DFS: [MMB Utils][5] by Stephen Harris, which require Perl
-- for ADFS: [Acorn FS Utils][6] by COEUS, which require a
+- for DFS: [MMB Utils][6] by Stephen Harris, which require Perl
+- for ADFS: [Acorn FS Utils][7] by COEUS, which require a
   C compiler
 
 Install the MMB Utils and Acorn FS Utils on your `PATH`, as needed.
@@ -111,7 +115,7 @@ Patching the \*command table
 The space now made available makes it practical to add *star commands*
 to the built-in OS command set.  New entries can be appended in place of
 the NUL terminator byte at `src/MOS38` line 283, currently located at
-address &DF4F.
+address &DECE.
 
 Command table entries have the following form:
 
@@ -131,7 +135,7 @@ has bit 7 set to mark the end of the command name; this means that bit 6
 must be set as well, to address the constant OS memory between &C000 and
 &FFFF.  It takes a jump from OS ROM code to reach routines in main
 memory (`JMIUSR` is one, described below).  Code in paged ROM can be
-reached via the [extended vector][7] entry points at &FF00..&FF4E, which
+reached via the [extended vector][8] entry points at &FF00..&FF4E, which
 must be set up before use.  The low byte of the address comes next.
 
 The entry ends with an auxiliary byte that controls the register values
@@ -157,24 +161,24 @@ Remember to replace the terminator byte at the end of the new table!
 
 ### Useful addresses
 
-Pointing a \*command at `CLIEND` (&E061) passes it to paged ROMs or the
+Pointing a \*command at `CLIEND` (&E121) passes it to paged ROMs or the
 current filing system.  This is convenient for disposing of the
 abbreviated forms of a command; the most efficient auxiliary byte value
 is &FF.
 
 To bypass utility ROMs, an action address equal to `JMIFSC - &07`
-(&E06A) sends the command straight to the filing system control vector,
+(&E12A) sends the command straight to the filing system control vector,
 defined at &021E.
 
-`JMIUSR` (&E686) sends a \*command to USERV, defined at &0200.  An
+`JMIUSR` (&F088) sends a \*command to USERV, defined at &0200.  An
 auxiliary byte value of &01 emulates `*LINE`; other values (between &02
 and &DF inclusive) cause entry into the USERV routine with non-standard
 reason codes.
 
-In a routine handling the new command, `SKIPSP` (&E07A) may be passed
+In a routine handling the new command, `SKIPSP` (&E13A) may be passed
 the current offset into the command in Y.  It returns a non-space
 character in A, its offset in Y, and `EQ` if that character is CR.
-`SKIPSN` (&E079) is the same but ignores the current character by
+`SKIPSN` (&E139) is the same but ignores the current character by
 advancing Y over it.
 
 As an example, a command named `I` whose routine begins with
@@ -213,7 +217,7 @@ from `src/MOS34`:
 
 Modify line 285 of `src/MOS38` accordingly:
 
-     % 152 ;padding
+     % 473 ;padding
 
 Fifteen more bytes can be saved by reverting portions of source code to
 the original.  They are:
@@ -222,13 +226,11 @@ the original.  They are:
 - 5 bytes calculating the cassette file size (in `src/MOS72`)
 - 7 bytes freeing &02CF..D1 for programs (in `src/MOS34`, `src/MOS38`)
 
-Applying all but the last change yields 20 bytes total and results in
-[OS 1.25][8], available separately.  The source code in this archive
-is manifolded and builds OS 1.20, 1.25, 1.26, STARGO and [*NOSP*][3]
-according to the choice of header file: NOSP eliminates a further 321
-bytes of speech processor driver code, based on J.G.Harston's
-[patch][9].  A conditional assembly reference to `MOS125` or `NOSP`
-introduces each variation from the standard code.  
+An archive of [OS 1.25][9] is available separately.  The source code in
+this archive is manifolded and builds OS 1.20, 1.25, 1.26, STARGO and
+NOSP according to the choice of header file.  A conditional assembly
+reference to `MOS125` or `NOSP` introduces each variation from the
+standard code.  
 Also in this distribution is OS 1.26 patched for [GoSDC][10] tape
 emulation support, and a copy of Acornsoft's Graphics Extension ROM
 suitable for all the modified OS ROMs. 
@@ -244,20 +246,20 @@ Known problems
   (it too can be [reassembled][12] to work with this OS).
 - Slogger's Tape to Challenger 3 ROM (T2C3) 1.00 jumps to the hard-coded
   address of the OSBYTE handler in OS 1.20, causing a crash on the next
-  call to OSBYTE. (Patch &8F15 = `JMP &E79D`.)
+  call to OSBYTE. (Patch &8F15 = `JMP &E858`.)
 - Many software titles, especially games, decrypt themselves using the
   contents of the OS ROM as a key.  These titles are incompatible
   with OS 1.26.
 
 [1]:  http://mdfs.net/Archive/BBCMicro/2006/10/14/174712.htm
 [2]:  https://stardot.org.uk/forums/viewtopic.php?p=358510#p358510
-[3]:  https://github.com/regregex/OS126/tree/nosp/
-[4]:  https://www.4corn.co.uk/articles/65hostandmos/
-[5]:  https://github.com/sweharris/MMB_Utils
-[6]:  https://github.com/SteveFosdick/AcornFsUtils
-[7]:  https://beebwiki.mdfs.net/Paged_ROM#Extended_vectors
-[8]:  http://regregex.bbcmicro.net/#prog.os126
-[9]:  https://mdfs.net/System/ROMs/AcornMOS/BBC_JGH/MOSnosp.src
+[3]:  https://mdfs.net/System/ROMs/AcornMOS/BBC_JGH/MOSnosp.src
+[4]:  https://github.com/regregex/OS126/tree/master/
+[5]:  https://www.4corn.co.uk/articles/65hostandmos/
+[6]:  https://github.com/sweharris/MMB_Utils
+[7]:  https://github.com/SteveFosdick/AcornFsUtils
+[8]:  https://beebwiki.mdfs.net/Paged_ROM#Extended_vectors
+[9]:  http://regregex.bbcmicro.net/#prog.os126
 [10]: https://www.zeridajh.org/hardware/gosdc/index.html
 [11]: http://regregex.bbcmicro.net/#features.bbc
 [12]: https://github.com/regregex/GXR
