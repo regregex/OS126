@@ -409,29 +409,7 @@ CRNX1
  INX
  CPXIM NROM
  BCC CRX ;[X a valid ROM number]
-; X=NROM
-;
-; if speech chip ready is still high then the chip has not been fitted
-;
- BIT PBQ
- BMI START1 ;[chip does not exist]
-; X=NROM
-; speech chip present
-;
- DEC SPFLAG ;SPFLAG := $FF
-; X=NROM
-; reset speech processor
-;
-; write NROM * $FF (reset) to speech processor
-SPRST1
- LDYIM SPOPRT
- JSR WSPECH ;N.B. corrupts A and Y
- DEX
- BNE SPRST1
-; X=0
-;
- STX TRCLQ
- STX TRCHQ ;enable interrupt after one negative pulse on PB6 (speech int)
+ ; $DB11
 START1
 
 

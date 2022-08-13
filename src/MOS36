@@ -387,121 +387,7 @@ ITIME2  ;check for TIMER2 interrupt
  ROLA ;:A = IFR << 1, N = TIMER1
  ROLA ;A = IFR << 2, N = TIMER2, C = TIMER1
  BPL ITIME1 ;[not TIMER2, check for TIMER1 interrupt]
-;
-; timer 2 interrupt
-; acknowledge interrupt
-;
-; and
-;
-; set speech RDY to interrupt again
-;
- LDAIM TIMER2
- LDXIM ZERO
-; N.B. minimise time between next two instructions
- STA IFRQ ;clear interrupt
- STX TRCHQ ;set to interrupt on speech chip INT
-;
-; process speech request
-;
-PRSPRQ  ;process speech request
-;
-; set speak external repeat counter to 4
-;
- LDXIM BSPCH
- STX SPWK2 ;**** ASSUMES BSPCH=8 ****
-;
-SPEREP  ;repeat poke of speak external data
-;
-; inspect speech buffer
-;
- JSR EXAM
-;
-; record buffer status - MI => dormant,  PL => busy
-;
- ROR SPSTAT
- BMI NSPECH ;[buffer empty]
-;
- TAY
- BEQ SPOK ;[speak external data]
-;
-; new command - ensure not talking
-;
- JSR RSPECH
- BMI NSPECH ;[talking active]
-;
-; new command and not talking
-;
-SPOK  ;speak external data
-;
-; get command byte from speech buffer
-;
- JSR REMOV
-;
-; codeword in A
-;
- STA SEROM
-;
-; pull data
-;
- JSR REMOV
- STA ROMPTR+&01 ;hi-address / hi-data
- JSR REMOV
- STA ROMPTR+&00 ;lo-address / lo-data
-;
-; switch on codeword
-;
- LDY SEROM
- BEQ ISP2 ;[command=0, do not treat codeword as a command]
- BPL ISP3 ;[command>0, speech command without address]
-;
-; command with address
-; command either speak(address) OR read-and-branch(address)
-;
-; check for read and branch request
-;
- BIT SEROM
- BVS RAB ;[read and branch]
-;
-; speak(address)
-; load address into speech processor
-;
-; V=0
- JSR SPLOAD ;N.B. does PHP...PLP
- BVC ISPX ;[ALWAYS jump]
-;
-RAB  ;read and branch (speak indirect)
-;
-; multiply offset by two
-;
- ASL ROMPTR+&00
- ROL ROMPTR+&01
-;
-; reselect address
-;
- JSR SPLIND ;load address indirect
-;
-ISPX
- LDY SHUTSP ;command defaults to speech
- JMP WSPECH ;send command AND return
-;
-;
-ISP3  ;treat codeword as a command
-;
- JSR WSPECH ;issue codeword command
-;
-ISP2  ;write argument data bytes
-;
- LDY ROMPTR+&00
- JSR WSPECH
- LDY ROMPTR+&01
- JSR WSPECH
-;
-; repeat poke of speak external data up to 4 times (8 bytes)
-;
- LSR SPWK2
- BNE SPEREP ;[try poking more speak external data]
-;
-NSPECH
+ ; $DD6F
  RTS
 
 
@@ -589,28 +475,7 @@ IIN0  ;counter zero
  SEI ;disable interrupts after sound processing
  DEC SSEMA ;release sound sema
 SINUSE
-;
-; give speech a chance
-;
-; check buffer
-;
- BIT SPSTAT
- BMI SPBUSY ;[speech buffer empty]
-;
-; read speech chip status
-;
- JSR RSPECH ;N.B. does not alter A if speech chip not present
-;
-; A>=$80 => busy
-;
-; N.B. if speech chip does not exist then 25% chance that PRSPRQ will
-;      be called, this will just result in a no-operation effect
-;
- EORIM &A0
- CMPIM &60
- BCC SPBUSY ;[100, 101 or 111]
-;
- JSR PRSPRQ ;process speech request
+ ; $DE1A
 ;
 SPBUSY  ;speech chip busy
 ;

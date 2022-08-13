@@ -262,6 +262,7 @@ NOTE  ;add note to note buffer
 ; X=SVWORD
 ; Y=0
 ;
+ ; $E832
  [ $Tutu
         LDAIM   7
         =       ar_word
@@ -270,11 +271,8 @@ NOTE  ;add note to note buffer
  |
  INY
  LDAIY WORDX ;A := command type indicator (hi-byte of 1st argument)
- CMPIM &FF
- ]
- BEQ SPEECH ;[speech command]
-;
  CMPIM &20
+ ]
  LDXIM SVWORD ;in case EXTSND called
  BCS EXTSND ;[route command to paged ROM]
 ;
@@ -378,28 +376,7 @@ NOTE2  ;buffer slot available
 ;
  SEC
  RORAX MACTIV-BSND1
- BMI NOTE3 ;[ALWAYS JUMP]
-;
-SPEECH  ;SOUND -1,x,y,z command
-; Y=1
- PHP ;needed to share code with BELL
- INY ;Y := $02
- LDAIY WORDX
- PHA
-;
- INY ;Y := $03
- LDAIY WORDX
- PHA
-;
- LDYIM ZERO
- LDAIY WORDX
- LDXIM BSPCH
- JSR WRITE ;insert first byte into buffer
- BCS SPESC ;[escape detected]
-;
-; C=0
-;
- ROR SPSTAT ;indicate speech buffer non-empty
+ ; $E88B
 ;
 NOTE3  ;add note and duration (ignored if first byte not inserted)
  PLA

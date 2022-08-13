@@ -395,18 +395,21 @@ BYTEM * &0075
 ; in:   X = byte,  Y = handle
  & FXBPUT
  
+ ; $E633
+ ;NB not possible to offer these calls to ROMs piecemeal
+ ;or to flag as unrecognised as we are committed to return via OSRET
 ;
 ; $9E
 ; read from speech chip
 ; in:   Y = command
 ; out:  Y = result
- & RSPECH
+ & RTS
  
 ;
 ; $9F
 ; write to speech chip
 ; in:   Y = command
- & WSPECH
+ & RTS
  
 ;
 ; $A0
@@ -474,9 +477,7 @@ OSWSND * .-WORDT:SHR: 1
 WORDN * .-WORDT:SHR: 1 ;number of entries in WORDT table
 
 
-MCODE  ;call user code
- LDAIM ZERO
-JMIUSR JMI USRVEC ;user OSBYTE call/OSWORD calls
+ ;MCODE moved to keyboard table
 
 
 ; OSBYTE specific routines

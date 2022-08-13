@@ -494,16 +494,15 @@ JMIKEY JMI KEYVEC
  = ":" ;shift '*'
  = MCR ;same shifted
 
-; 'hide' 6 bytes
-SENDD
- = &00 ;inputs
- = &FF ;outputs
-SENDS
- = &01 ;read enable
- = &02 ;write enable
-SENDF
- = &09 ;read disable
- = &0A ;write disable
+ ; $EE75 (for $F075)
+ ;moving short routine from main code to this space
+ ;to consolidate savings into main free space pool
+ ;candidates are PUTCHK (6), OPT (5), MCODE (5), WFRED etc (5),
+ ;RFRED etc (4) and RCHAN (4)
+MCODE  ;call user code
+ LDAIM ZERO
+JMIUSR JMI USRVEC ;user OSBYTE call/OSWORD calls
+ % 1 ;1 byte padding 
 
 ;       ROW     5
  = &02 ;SHIFT lock
