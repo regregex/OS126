@@ -16,10 +16,10 @@ get mos99
 
 N&6000+&3C00
 *dir ^
-save MOS1_26
+save nosp
 &6000
 &6000+&4000
 &C000
 T
 
-*| Real OS 1.26 built onto wdfs
+*| Real OS NOSP built onto wdfs
