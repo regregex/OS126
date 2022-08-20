@@ -244,7 +244,7 @@ COMTAB  ;table of MOS commands
 
  = ZERO ;end of table
 
- % 29 ;padding
+ % 24 ;padding
 
 GO
  CLC
@@ -282,7 +282,7 @@ RETAIL ;return command line tail to OSARGS control block
  |
  = ZERO ;end of table
 
- % 140 ;padding
+ % 135 ;padding
  ]
 
 CLINT

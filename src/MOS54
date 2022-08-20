@@ -23,14 +23,11 @@ SPCPYF  ;entry point from failed copyright message test
  LDXIM SVISFS
  INC SEROM
  LDY SEROM
- [ FALSE = &00
- ; $EE1E
+ BMI SPPH ;[process PHROM, V not altered]
  CPYIM NROM ;if we get here with SEROM >= NROM,
  BCC SPSV ;then no paged ROM is to respond
- RTS ;so exit
- |
- BPL SPSV ;[process paged ROM, V not altered]
- ]
+ RTS ;so exit C=1, call unclaimed
+SPPH
 ;
 ; process PHROM, V not altered
 ;
