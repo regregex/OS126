@@ -14,6 +14,8 @@ OS 1.26 has the following modifications:
 - Calling `*RUN` on a cassette or ROM file [does not overwrite][1]
   arbitrary I/O addresses after loading the file (thanks to John
   Kortink)
+- RFS `*CAT` and file search terminate with an RFS ROM in slot 0
+  (thanks to J.G.Harston)
 - In the `VDU 21` state, cursor motion codes are only sent to the
   printer while `VDU 2` applies; the parameter of `VDU 1` is printed
   once
@@ -28,7 +30,7 @@ OS 1.26 has the following modifications:
 - Locations &02CF, &02D0 and &02D1 are not touched
 - Locations &C4 and &CB are unused while the CFS or RFS is active
 - Semantically transparent optimisations
-- 139 bytes cleared in the main section + 1 existing = 140 bytes free
+- 134 bytes cleared in the main section + 1 existing = 135 bytes free
 - 21 bytes cleared in the top page
 
 The free space is placed at the end of the \*command table, currently
@@ -53,7 +55,7 @@ option in `src/MOSHdr` enables:
   \[&lt;*address*&gt;\]\[`,`\] \[`;`\]\[&lt;*arguments*&gt;\]
   which do both of the above
 - `*FX 5,n` flashes the keyboard LEDs while waiting for the printer
-- 28 + 1 bytes free
+- 24 + 1 bytes free
 
 The rest of this document describes vanilla OS 1.26.
 
@@ -87,7 +89,7 @@ build OS 1.26:
     *Quit
 
 The current ROM image has an MD5SUM of
-`52c263c6c97c6bdaf956c442857502b8`.
+`f8b1dd65f2e7e0581707917cb6611bb4`.
 
 Build requirements: disc images
 ------------------------------
@@ -108,9 +110,9 @@ Then `cd` to the respective `dfs/` or `adfs/` directory, and enter:
 Patching the \*command table
 ----------------------------
 
-The space now made available makes it practical to add *star commands*
-to the built-in OS command set.  New entries can be appended in place of
-the NUL terminator byte at `src/MOS38` line 283, currently located at
+The space now available makes it practical to add *star commands* to the
+built-in OS command set.  New entries can be appended in place of the
+NUL terminator byte at `src/MOS38` line 283, currently located at
 address &DF4F.
 
 Command table entries have the following form:
@@ -157,24 +159,24 @@ Remember to replace the terminator byte at the end of the new table!
 
 ### Useful addresses
 
-Pointing a \*command at `CLIEND` (&E061) passes it to paged ROMs or the
+Pointing a \*command at `CLIEND` (&E05C) passes it to paged ROMs or the
 current filing system.  This is convenient for disposing of the
 abbreviated forms of a command; the most efficient auxiliary byte value
 is &FF.
 
 To bypass utility ROMs, an action address equal to `JMIFSC - &07`
-(&E06A) sends the command straight to the filing system control vector,
+(&E065) sends the command straight to the filing system control vector,
 defined at &021E.
 
-`JMIUSR` (&E686) sends a \*command to USERV, defined at &0200.  An
+`JMIUSR` (&E681) sends a \*command to USERV, defined at &0200.  An
 auxiliary byte value of &01 emulates `*LINE`; other values (between &02
 and &DF inclusive) cause entry into the USERV routine with non-standard
 reason codes.
 
-In a routine handling the new command, `SKIPSP` (&E07A) may be passed
+In a routine handling the new command, `SKIPSP` (&E075) may be passed
 the current offset into the command in Y.  It returns a non-space
 character in A, its offset in Y, and `EQ` if that character is CR.
-`SKIPSN` (&E079) is the same but ignores the current character by
+`SKIPSN` (&E074) is the same but ignores the current character by
 advancing Y over it.
 
 As an example, a command named `I` whose routine begins with
@@ -213,19 +215,20 @@ from `src/MOS34`:
 
 Modify line 285 of `src/MOS38` accordingly:
 
-     % 152 ;padding
+     % 147 ;padding
 
-Fifteen more bytes can be saved by reverting portions of source code to
+Twenty more bytes can be saved by reverting portions of source code to
 the original.  They are:
 
 - 3 bytes providing the OSWRSC entry (in `src/MOS99`).
 - 5 bytes calculating the cassette file size (in `src/MOS72`)
+- 5 bytes ensuring RFS file search terminates (in `src/MOS54`)
 - 7 bytes freeing &02CF..D1 for programs (in `src/MOS34`, `src/MOS38`)
 
-Applying all but the last change yields 20 bytes total and results in
+Applying all but the last change yields 25 bytes total and results in
 [OS 1.25][8], available separately.  The source code in this archive
-is manifolded and builds OS 1.20, 1.25, 1.26, STARGO and [*NOSP*][3]
-according to the choice of header file: NOSP eliminates a further 321
+is manifolded and builds OS 1.20, 1.25, 1.26, STARGO and [NOSP][3]
+according to the choice of header file: NOSP eliminates a further 322
 bytes of speech processor driver code, based on J.G.Harston's
 [patch][9].  A conditional assembly reference to `MOS125` or `NOSP`
 introduces each variation from the standard code.  
@@ -244,7 +247,7 @@ Known problems
   (it too can be [reassembled][12] to work with this OS).
 - Slogger's Tape to Challenger 3 ROM (T2C3) 1.00 jumps to the hard-coded
   address of the OSBYTE handler in OS 1.20, causing a crash on the next
-  call to OSBYTE. (Patch &8F15 = `JMP &E79D`.)
+  call to OSBYTE. (Patch &8F15 = `JMP &E798`.)
 - Many software titles, especially games, decrypt themselves using the
   contents of the OS ROM as a key.  These titles are incompatible
   with OS 1.26.
