@@ -7,19 +7,6 @@
 ;Entered with two args in X & Y decoded from
 ;command line by MOS.
 
-CFSOPT TXA
- BEQ DEF ;X=0/Y=0 => default
- CPXIM &03
- BEQ SETGAP
- CPYIM &03
- BCS OPTERR
- DEX
- BEQ MSGS
- DEX
- BEQ ERRS
-
-OPTERR JMP MBDCMD
-
 RECORD
 
  LDA SROMSW
@@ -40,16 +27,30 @@ GETCR1 JSR ESCAPE
  JMP OSNEWL
 
 
-MSGS LDAIM MSGMSK
- INY
- INY
- INY
- BNE XSETFLG ;[ALWAYS jump]
+OPTERR JMP MBDCMD
 
-ERRS LDAIM ERRMSK ;Mask out error and default bits
-XSETFLG INY
+;Entered with two args in X & Y decoded from
+;command line by MOS.
+
+CFSOPT CPXIM &03
+ BEQ SETGAP
+ BCS OPTERR
+ LDAIM DEFLT
+ CPYIM &03
+ DEX
+ BMI SETFL1
+ BCS OPTERR
+ BEQ MSGS
+ERRS
+ INY
+ INY
+ INY
+ EORIM MSGMSK:EOR:ERRMSK ;Mask out error and default bits
+MSGS EORIM DEFLT:EOR:MSGMSK
+XSETFLG
  AND OPTS
-SETFL1 ORAAY OPTTAB
+ ORAAY OPTTAB
+SETFL1
  STA OPTS
 RECEXX
  RTS
@@ -60,17 +61,6 @@ SETGAP TYA
 SETGP2 LDAIM DEFGAP
 SETGP1 STA SEQGAP
  RTS
-
-DEF TAY  ;Must be zero from OPT
- BEQ SETFL1
-
-OPTTAB = DEFLT
- = IGBIT
- = RETBIT
- = ABTBIT
- = &00 ;Messages off
- = MSGS1 ;Short messages
- = MSGS2 ;Long messages
 
  TTL Main Routines - Interrupt routine
  OPT &01
@@ -282,7 +272,14 @@ SRCHXX  ;Check if run off the end of SROM system
 FNF
  BRK
  = SFSER1
- = "File not found",&00
+ = "File not found"
+OPTTAB
+ = &00 ;Messages off
+ = MSGS1 ;Short messages
+ = MSGS2 ;Long messages
+ = IGBIT
+ = RETBIT
+ = ABTBIT
 
 SRCHYY LDYIM &FF ;For LOAD and RDBFER
  STY OLDFLG ;Fool PRTHDR to print
@@ -777,15 +774,7 @@ PRTHDR
 ;Expects block info to be in INFO.
 
 
- ;Set FSIZE here for correct OSFILE block whether messages on/off
- LDA INFO +BKSZEL
- STA FSIZE
  LDA INFO +BKNOLO
- TAY
- CLC
- ADC INFO +BKSZEH
- STA FSIZE + 1
- TYA
  ORA INFO +BKNOHI
  BEQ PRTHL8 ;If first block, is new file
  BIT OLDFLG ;If previous block = last block
@@ -798,7 +787,15 @@ SAVHDR
 
 ;Entry from WRBLOK
 
-PRTHL3 LDYIM &00
+ ;Set FSIZE here for correct OSFILE block whether messages on/off
+PRTHL3
+ LDA INFO +BKSZEL
+ STA FSIZE
+ LDA INFO +BKNOLO
+ CLC
+ ADC INFO +BKSZEH
+ STA FSIZE + 1
+ LDYIM &00
  STY ERRSW
  LDA INFO +BKFLAG
  STA OLDFLG ;Set prev. flag
