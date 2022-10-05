@@ -5,7 +5,7 @@ This repository contains source code for OS 1.26 / NOSP, a copy of Acorn
 OS 1.20 with some bugs fixed and a large space cleared for further
 patching.
 
-OS 1.26 has the following modifications:
+OS 1.26 / NOSP has the following modifications:
 
 - An OSWRSC entry point is provided at &FFB3
 - The OSFILE call handler in the Cassette and ROM filing systems (CFS,
@@ -32,7 +32,7 @@ OS 1.26 has the following modifications:
   by J.G.Harston)
 - RFS file searching and `*CAT` terminate when an RFS ROM is present
   in slot 0 (thanks to J.G.Harston)
-- 460 bytes cleared in the main section + 1 existing = 461 bytes free
+- 467 bytes cleared in the main section + 1 existing = 468 bytes free
 - 21 bytes cleared in the top page
 
 The free space is placed at the end of the \*command table, currently
@@ -41,7 +41,7 @@ located at address &DECF.
 OS 1.26
 -------
 
-The [main branch][4] retains speech processor support and makes 161
+The [main branch][4] retains speech processor support and makes 163
 bytes of the ROM available in total. 
 
 STARGO / NOSP
@@ -57,18 +57,18 @@ option in `src/MOSHdr` enables:
   \[&lt;*address*&gt;\]\[`,`\] \[`;`\]\[&lt;*arguments*&gt;\]
   which do both of the above
 - `*FX 5,n` flashes the keyboard LEDs while waiting for the printer
-- 350 + 1 bytes free
+- 357 + 1 bytes free
 
 The rest of this document describes vanilla OS 1.26 / NOSP.
 
-Build requirements: OS 1.26
----------------------------
+Build requirements: OS 1.26 / NOSP
+----------------------------------
 
 See the upstream release notes, included below, on how to assemble OS
-1.26 from the prebuilt disc images, substituting the version number as
-necessary.  The Stardot method builds the OS using a physical Acorn
-'Turbo' second processor (or a device emulating one) plugged into a BBC
-Micro or Master series computer.
+1.26 / NOSP from the prebuilt disc images, substituting the version
+number as necessary.  The Stardot method builds the OS using a physical
+Acorn 'Turbo' second processor (or a device emulating one) plugged into
+a BBC Micro or Master series computer.
 
 There is also the option to assemble using an emulated Turbo processor,
 running under RISC OS 2 or 3.x.
@@ -83,7 +83,7 @@ Once you have completed the OS 1.20 build, load the
 Load Drive :0...).  Open drive :0, and copy all files from :0 into the
 `Emu6502.HostEmuOS` directory *window* to replace the OS 1.20 source
 files.  Then enter these commands into the existing command window to
-build OS 1.26, assembled in a file named `nosp`:
+build OS 1.26 / NOSP, assembled in a file named `nosp`:
 
     *Quit
     *EmulateTurbo
@@ -91,7 +91,7 @@ build OS 1.26, assembled in a file named `nosp`:
     *Quit
 
 The current ROM image has an MD5SUM of
-`bd98a5444fb4bec810fe53bbf0c8ebec`.
+`565e41c35beadd5bc02bd02c63060edc`.
 
 Build requirements: disc images
 ------------------------------
@@ -112,9 +112,9 @@ Then `cd` to the respective `dfs/` or `adfs/` directory, and enter:
 Patching the \*command table
 ----------------------------
 
-The space now made available makes it practical to add *star commands*
-to the built-in OS command set.  New entries can be appended in place of
-the NUL terminator byte at `src/MOS38` line 283, currently located at
+The space now available makes it practical to add *star commands* to the
+built-in OS command set.  New entries can be appended in place of the
+NUL terminator byte at `src/MOS38` line 283, currently located at
 address &DECE.
 
 Command table entries have the following form:
@@ -126,14 +126,15 @@ or more capital letters.  Other characters are not allowed.
 Note that built-in commands *and their abbreviated forms* take
 precedence over all other commands in the service chain.  It may
 sometimes be wise to reject abbreviations; to do this create a pair of
-entries, one without the last letter which passes abbreviated calls down
-the chain (see below), preceding an entry naming the command in full.
+entries, one missing the last letter which is set to pass abbreviated
+calls down the chain (see below), preceding an entry naming the command
+in full.
 
 Following the name of the command is the high byte of the *action
 address* which the command interpreter will call.  The high byte always
 has bit 7 set to mark the end of the command name; this means that bit 6
 must be set as well, to address the constant OS memory between &C000 and
-&FFFF.  It takes a jump from OS ROM code to reach routines in main
+&FFFF.  It takes a jump from OS ROM code to reach a routine in main
 memory (`JMIUSR` is one, described below).  Code in paged ROM can be
 reached via the [extended vector][8] entry points at &FF00..&FF4E, which
 must be set up before use.  The low byte of the address comes next.
@@ -161,24 +162,24 @@ Remember to replace the terminator byte at the end of the new table!
 
 ### Useful addresses
 
-Pointing a \*command at `CLIEND` (&E121) passes it to paged ROMs or the
+Pointing a \*command at `CLIEND` (&E128) passes it to paged ROMs or the
 current filing system.  This is convenient for disposing of the
 abbreviated forms of a command; the most efficient auxiliary byte value
 is &FF.
 
 To bypass utility ROMs, an action address equal to `JMIFSC - &07`
-(&E12A) sends the command straight to the filing system control vector,
+(&E131) sends the command straight to the filing system control vector,
 defined at &021E.
 
-`JMIUSR` (&F088) sends a \*command to USERV, defined at &0200.  An
+`JMIUSR` (&F08F) sends a \*command to USERV, defined at &0200.  An
 auxiliary byte value of &01 emulates `*LINE`; other values (between &02
 and &DF inclusive) cause entry into the USERV routine with non-standard
 reason codes.
 
-In a routine handling the new command, `SKIPSP` (&E13A) may be passed
+In a routine handling the new command, `SKIPSP` (&E141) may be passed
 the current offset into the command in Y.  It returns a non-space
 character in A, its offset in Y, and `EQ` if that character is CR.
-`SKIPSN` (&E139) is the same but ignores the current character by
+`SKIPSN` (&E140) is the same but ignores the current character by
 advancing Y over it.
 
 As an example, a command named `I` whose routine begins with
@@ -217,13 +218,14 @@ from `src/MOS34`:
 
 Modify line 285 of `src/MOS38` accordingly:
 
-     % 473 ;padding
+     % 480 ;padding
 
-Fifteen more bytes can be saved by reverting portions of source code to
+Twenty more bytes can be saved by reverting portions of source code to
 the original.  They are:
 
 - 3 bytes providing the OSWRSC entry (in `src/MOS99`).
 - 5 bytes calculating the cassette file size (in `src/MOS72`)
+- 5 bytes ensuring RFS file searching terminates (in `src/MOS54`)
 - 7 bytes freeing &02CF..D1 for programs (in `src/MOS34`, `src/MOS38`)
 
 An archive of [OS 1.25][9] is available separately.  The source code in
@@ -246,7 +248,7 @@ Known problems
   (it too can be [reassembled][12] to work with this OS).
 - Slogger's Tape to Challenger 3 ROM (T2C3) 1.00 jumps to the hard-coded
   address of the OSBYTE handler in OS 1.20, causing a crash on the next
-  call to OSBYTE. (Patch &8F15 = `JMP &E858`.)
+  call to OSBYTE. (Patch &8F15 = `JMP &E85F`.)
 - Many software titles, especially games, decrypt themselves using the
   contents of the OS ROM as a key.  These titles are incompatible
   with OS 1.26.
