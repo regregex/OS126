@@ -218,15 +218,15 @@ Modify line 285 of `src/MOS38` accordingly:
 
      % 154 ;padding
 
-Twenty more bytes can be saved by reverting portions of source code to
-the original.  They are:
+Twenty-one more bytes can be saved by reverting portions of source code
+to the original.  They are:
 
 - 3 bytes providing the OSWRSC entry (in `src/MOS99`).
-- 5 bytes calculating the cassette file size (in `src/MOS72`)
+- 6 bytes calculating the cassette file size (in `src/MOS72`)
 - 5 bytes ensuring RFS file searching terminates (in `src/MOS54`)
 - 7 bytes freeing &02CF..D1 for programs (in `src/MOS34`, `src/MOS38`)
 
-Applying all but the last change yields 25 bytes total and results in
+Applying all but the last change yields 26 bytes total and results in
 [OS 1.25][8], available separately.  The source code in this archive
 is manifolded and builds OS 1.20, 1.25, 1.26, STARGO and [NOSP][3]
 according to the choice of header file: NOSP eliminates a further 321
