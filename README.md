@@ -32,17 +32,17 @@ OS 1.26 / NOSP has the following modifications:
   by J.G.Harston)
 - RFS file searching and `*CAT` terminate when an RFS ROM is present
   in slot 0 (thanks to J.G.Harston)
-- 467 bytes cleared in the main section + 1 existing = 468 bytes free
+- 465 bytes cleared in the main section + 1 existing = 466 bytes free
 - 21 bytes cleared in the top page
 
 The free space is placed at the end of the \*command table, currently
-located at address &DECF.
+located at address &DED1.
 
 OS 1.26
 -------
 
 The [main branch][4] retains speech processor support and makes 163
-bytes of the ROM available in total. 
+bytes of the ROM available in total.
 
 STARGO / NOSP
 -------------
@@ -57,7 +57,7 @@ option in `src/MOSHdr` enables:
   \[&lt;*address*&gt;\]\[`,`\] \[`;`\]\[&lt;*arguments*&gt;\]
   which do both of the above
 - `*FX 5,n` flashes the keyboard LEDs while waiting for the printer
-- 357 + 1 bytes free
+- 355 + 1 bytes free
 
 The rest of this document describes vanilla OS 1.26 / NOSP.
 
@@ -91,7 +91,7 @@ build OS 1.26 / NOSP, assembled in a file named `nosp`:
     *Quit
 
 The current ROM image has an MD5SUM of
-`565e41c35beadd5bc02bd02c63060edc`.
+`bc901fc2275803cf973a1c32aa2fee2e`.
 
 Build requirements: disc images
 ------------------------------
@@ -115,7 +115,7 @@ Patching the \*command table
 The space now available makes it practical to add *star commands* to the
 built-in OS command set.  New entries can be appended in place of the
 NUL terminator byte at `src/MOS38` line 283, currently located at
-address &DECE.
+address &DED0.
 
 Command table entries have the following form:
 
@@ -218,13 +218,13 @@ from `src/MOS34`:
 
 Modify line 285 of `src/MOS38` accordingly:
 
-     % 480 ;padding
+     % 478 ;padding
 
-Twenty more bytes can be saved by reverting portions of source code to
-the original.  They are:
+Twenty-one more bytes can be saved by reverting portions of source code
+to the original.  They are:
 
 - 3 bytes providing the OSWRSC entry (in `src/MOS99`).
-- 5 bytes calculating the cassette file size (in `src/MOS72`)
+- 6 bytes calculating the cassette file size (in `src/MOS72`)
 - 5 bytes ensuring RFS file searching terminates (in `src/MOS54`)
 - 7 bytes freeing &02CF..D1 for programs (in `src/MOS34`, `src/MOS38`)
 
@@ -235,7 +235,7 @@ reference to `MOS125` or `NOSP` introduces each variation from the
 standard code.  
 Also in this distribution is OS 1.26 patched for [GoSDC][10] tape
 emulation support, and a copy of Acornsoft's Graphics Extension ROM
-suitable for all the modified OS ROMs. 
+suitable for all the modified OS ROMs.
 
 Known problems
 --------------
