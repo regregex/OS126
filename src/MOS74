@@ -4,9 +4,6 @@
  TTL C.F.S Main Routines - OPT
  OPT &01
 
-;Entered with two args in X & Y decoded from
-;command line by MOS.
-
 RECORD
 
  LDA SROMSW

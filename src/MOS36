@@ -388,7 +388,7 @@ ITIME2  ;check for TIMER2 interrupt
  ROLA ;A = IFR << 2, N = TIMER2, C = TIMER1
  BPL ITIME1 ;[not TIMER2, check for TIMER1 interrupt]
  ; $DD6F
- RTS
+ JMP UNKIRQ ;pass to ROMs or IRQ2V
 
 
 
