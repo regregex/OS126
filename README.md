@@ -24,13 +24,14 @@ OS 1.26 has the following modifications:
 - The paged ROM indirection routine places one byte less on the stack
 - OSBYTE calls to write to I/O memory avoid causing a dummy read cycle
   before the write, which upsets some hardware
+- OSFILE with A=0 (save file) reads data only from the source processor
 - Main memory is cleared faster on power up or 'critical' BREAK
 - Locations &02CF, &02D0 and &02D1 are not touched
 - Locations &C4 and &CB are unused while the CFS or RFS is active
 - RFS file searching and `*CAT` terminate when an RFS ROM is present
   in slot 0 (thanks to J.G.Harston)
 - Semantically transparent optimisations
-- 141 bytes cleared in the main section + 1 existing = 142 bytes free
+- 142 bytes cleared in the main section + 1 existing = 143 bytes free
 - 21 bytes cleared in the top page
 
 The free space is placed at the end of the \*command table, currently
@@ -40,7 +41,7 @@ OS 1.26 / NOSP
 --------------
 
 In addition to the above, the [NOSP branch][3] strips speech processor
-support and makes 489 bytes of the ROM available in total.
+support and makes 488 bytes of the ROM available in total.
 
 STARGO
 ------
@@ -55,7 +56,7 @@ option in `src/MOSHdr` enables:
   \[&lt;*address*&gt;\]\[`,`\] \[`;`\]\[&lt;*arguments*&gt;\]
   which do both of the above
 - `*FX 5,n` flashes the keyboard LEDs while waiting for the printer
-- 31 + 1 bytes free
+- 32 + 1 bytes free
 
 The rest of this document describes vanilla OS 1.26.
 
@@ -89,7 +90,7 @@ build OS 1.26:
     *Quit
 
 The current ROM image has an MD5SUM of
-`40cf8f24ddbdea9cd3b1ed9909e5712e`.
+`52d480c29ec6dc630d53b6d73e9d34eb`.
 
 Build requirements: disc images
 ------------------------------
@@ -160,24 +161,24 @@ Remember to replace the terminator byte at the end of the new table!
 
 ### Useful addresses
 
-Pointing a \*command at `CLIEND` (&E063) passes it to paged ROMs or the
+Pointing a \*command at `CLIEND` (&E064) passes it to paged ROMs or the
 current filing system.  This is convenient for disposing of the
 abbreviated forms of a command; the most efficient auxiliary byte value
 is &FF.
 
 To bypass utility ROMs, an action address equal to `JMIFSC - &07`
-(&E06C) sends the command straight to the filing system control vector,
+(&E06D) sends the command straight to the filing system control vector,
 defined at &021E.
 
-`JMIUSR` (&E688) sends a \*command to USERV, defined at &0200.  An
+`JMIUSR` (&E689) sends a \*command to USERV, defined at &0200.  An
 auxiliary byte value of &01 emulates `*LINE`; other values (between &02
 and &DF inclusive) cause entry into the USERV routine with non-standard
 reason codes.
 
-In a routine handling the new command, `SKIPSP` (&E07C) may be passed
+In a routine handling the new command, `SKIPSP` (&E07D) may be passed
 the current offset into the command in Y.  It returns a non-space
 character in A, its offset in Y, and `EQ` if that character is CR.
-`SKIPSN` (&E07B) is the same but ignores the current character by
+`SKIPSN` (&E07C) is the same but ignores the current character by
 advancing Y over it.
 
 As an example, a command named `I` whose routine begins with
@@ -216,7 +217,7 @@ from `src/MOS34`:
 
 Modify line 285 of `src/MOS38` accordingly:
 
-     % 154 ;padding
+     % 155 ;padding
 
 Twenty-one more bytes can be saved by reverting portions of source code
 to the original.  They are:
@@ -229,13 +230,13 @@ to the original.  They are:
 Applying all but the last change yields 26 bytes total and results in
 [OS 1.25][8], available separately.  The source code in this archive
 is manifolded and builds OS 1.20, 1.25, 1.26, STARGO and [NOSP][3]
-according to the choice of header file: NOSP eliminates a further 321
+according to the choice of header file: NOSP eliminates a further 319
 bytes of speech processor driver code, based on J.G.Harston's
 [patch][9].  A conditional assembly reference to `MOS125` or `NOSP`
 introduces each variation from the standard code.  
 Also in this distribution is OS 1.26 patched for [GoSDC][10] tape
 emulation support, and a copy of Acornsoft's Graphics Extension ROM
-suitable for all the modified OS ROMs. 
+suitable for all the modified OS ROMs.
 
 Known problems
 --------------
@@ -248,7 +249,7 @@ Known problems
   (it too can be [reassembled][12] to work with this OS).
 - Slogger's Tape to Challenger 3 ROM (T2C3) 1.00 jumps to the hard-coded
   address of the OSBYTE handler in OS 1.20, causing a crash on the next
-  call to OSBYTE. (Patch &8F15 = `JMP &E79F`.)
+  call to OSBYTE. (Patch &8F15 = `JMP &E7A0`.)
 - Many software titles, especially games, decrypt themselves using the
   contents of the OS ROM as a key.  These titles are incompatible
   with OS 1.26.
