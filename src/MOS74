@@ -4,9 +4,6 @@
  TTL C.F.S Main Routines - OPT
  OPT &01
 
-;Entered with two args in X & Y decoded from
-;command line by MOS.
-
 RECORD
 
  LDA SROMSW
@@ -135,10 +132,10 @@ RDCHAR DEX
  BNE RDBLK ;X <> 3 => not RDCHAR task
  BCS GOTDCD ;DCD found, not char
  STY IBUF ;Store char read
- BEQ IEX
+ RTS
 GOTDCD LDAIM &80
  STA IFLAG ;Indicate DCD
- BNE IEX
+ RTS
 
 RDBLK DEX  ;X <> 4=> not RDBLK
  BNE SUMIN
@@ -663,13 +660,14 @@ WRBKL2 LDAAX INFO ;Rest of header to tape
  JSR SETJB1
 WRBKL3
  [ TUBESW=0
- LDAIY BKADDR ;Load byte from IO proc.
-
  JSR TUBCHK ;Check tube present and top two bytes of address
  BEQ WRBKL6 ;Yes, continue. (Note TAX done in TUBCHK)
- LDX TREG3 ;No, get from tube
+ LDA TREG3 ;No, get from tube
+ BCC WRBKL7 ;skip IO read (always; TUBCHK returns CC if Tube)
 
-WRBKL6 TXA  ;Restore byte from RAM
+WRBKL6
+ LDAIY BKADDR ;Load byte from IO proc.
+WRBKL7
  |
  LDAIY BKADDR ;If no tube, read from RAM
  ]
