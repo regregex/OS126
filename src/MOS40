@@ -63,7 +63,7 @@ LSA JSR SKIPSP
 LSA1 ;rotate hex digit into 4-byte address
 ; move nibble into high nibble
 ;set b3, clear b2..0
- SEC
+ ;SEC ;C=1 from BCC LSA0 (CLRFB preserves) or BCS LSA1
  ROLA
  ASLA
  ASLA

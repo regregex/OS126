@@ -92,7 +92,7 @@ COMTAB  ;table of MOS commands
 ;      A- => enter with Y = offset
 
 ; CAT
-;must be first to trap *.
+;must come first to trap *.
  = "CAT"
  & /JMIFSC
  = FSCAT ;enter with XY -> line
@@ -242,9 +242,10 @@ COMTAB  ;table of MOS commands
 
  = /LANG ;assumed -ve; stored as default jump address
 
- = ZERO ;end of table
+ = "" ;terminating keyword [duplicate, NEVER matches]
+ = &80 ;end of table
 
- % 32 ;padding
+ ;% 0 ;padding
 
 GO
  CLC
@@ -277,12 +278,39 @@ RETAIL ;return command line tail to OSARGS control block
  LDAIM &FF ;command line tail is always in I/O processor
  STAZX &02 ;set high word to &FFFF
  STAZX &03
+ [ FALSE = &00
  LDAIM SEAL ;set conventional return value (conflicting documentation)
+ ]
  RTS
- |
- = ZERO ;end of table
 
- % 143 ;padding
+COLHEX
+ [ FALSE = &00
+ CMPIM "." ;is the next character a dot?
+ BEQ NOTCO ;then pass :<hex>.<string> to FS
+ ]
+ LDX INFO +BKEXEC ;get selected slot to X
+ CPXIM NROM ;does the slot have a table entry?
+ [ TRUE = &00
+ BCS FRIEZE ;[not in table]
+ |
+ BCS ABACUS ;if not then call the ROM anyway!
+ ]
+ LDAAX ROMS
+ BPL FRIEZE ;[not a service ROM] 
+ABACUS
+ LDA ROMID ;save current ROM
+ PHA
+ JSR STXROM
+ LDAIM SVNAME
+ JSR ROMSFT ;call service ROM
+ TAX ;if ROM did not claim the call
+ BNE FRIEZE ;then raise "Bad command"
+ JMP SVOP3 ;[service claimed, do not offer to other ROMs]
+ |
+ = "" ;terminating keyword [duplicate, NEVER matches]
+ = &80 ;end of table
+
+ % 181 ;padding
  ]
 
 CLINT
@@ -299,6 +327,7 @@ CLICHK CMPIY WORK
  INY
  BNE CLICHK
 ; no terminator within 256 bytes so ignore line
+CLIRTS
  RTS
 ;
 CLILOK LDYIM &FF ;start scan from beginning of input buffer
@@ -324,13 +353,42 @@ CLIR  ;skip leading spaces and asterisks
  JSR CLIXY ;make XY -> after /
  LDAIM FSNOTA
  [ STARGO = &00
- BNE JMICMD ;[ALWAYS JUMP]
- |
- BNE JMIFSC ;[ALWAYS JUMP]
- ]
+ JMP JMICMD ;[ALWAYS JUMP]
 NOTSL
 ; save pointer to rest of line
  STY CLIRY
+ CMPIM ":"
+ BNE NOTCO
+ INY ;skip past colon
+ [ TRUE = &00
+ CMPIY WORK ;is there a second colon?
+ BNE NOTCO ;reject if not
+ INY ;skip past colon
+ ]
+ CMPIY WORK ;three colons?
+ BNE COLON ;if not then get hex
+ JSR SKIPSN ;else skip colon and spaces
+ TYA ;command line offset to A
+ BNE CLIFS ;pass rest of line via FSC 3 (always)
+COLON
+ LDXIM INFO +BKEXEC -FBLOCK ;hopefully out of the way
+ JSR LSA ;hex to scratch space
+ PHP ;save result
+ JSR SKIPSP
+ PLP
+ BCS COLHEX ;if hex present, call specific ROM
+ LDXIM SVNAME ;else pass to service ROMs only
+ JSR SVOP
+ BEQ SVACK
+FRIEZE 
+ JMP MBDCMD
+NOTCO
+ |
+ BNE JMIFSC ;[ALWAYS JUMP]
+NOTSL
+; save pointer to rest of line
+ STY CLIRY
+ ]
 ; X=&FF going to 0, point to start of table
  LDXIM &FF
 CLIRST ; restart search at next keyword
@@ -339,7 +397,7 @@ CLIRST ; restart search at next keyword
 CLIADV ; compare characters
  INY ; advance user word pointer
  LDAIY WORK ; fetch user character
- JSR CAPS ; set C=1 iff alpha [not caps]
+ JSR CAPS ; set C=1 iff alpha [not iff caps]
  ANDIM &5F ; equate cases and also clear bit 7
  INX ; advance table pointer or skip aux byte
  EORAX COMTAB ; set b7 from table and compare b6..0
@@ -347,30 +405,28 @@ CLIADV ; compare characters
  ;0 0 0 mismatch                skip            y (won't match ".")
  ;0 0 1 end of user word/abbr.  skip/accept     y
  ;0 1 0 characters match        advance         n
- ;0 1 1 end of user word/abbr.  skip/accept     y
+ ;0 1 1 impossible              -               -
  ;1 0 0 end of keyword          skip            n
  ;1 0 1 end of both words       accept          n
- BCS CLIFIN ; if C=1, test N
- ;x x 0
  BEQ CLIADV ; if Z=1 C=0 then characters match, advance
- ;x 0 0
+ ;x 0 x
 CLIFIN
- ;x 0 0 / x x 1
  BMI CLISKP ; if N=1 then skip or set up X and accept
- ;0 0 0 / 0 x 1
+ ;0 0 x
  LDAIY WORK ; restore user character
- INY ; leave pointer advanced past dot
+ INY ; advance pointer past dot
  EORIM ".":EOR:&FF ; if it was ".", now A=&FF
  CMPIM &FF ; C=0 if mismatch, skip; C=1 if abbreviation, accept
 CLISKP
- ;0 0 0 / 0 x 1 / 1 0 x
+ ;x 0 x
  INX ; skip high byte of action address
 CLIALI ; align to keyword terminator
  INX ; advance table pointer or skip low byte of action address
  LDAAX COMTAB -&02 ; test table byte at original offset
- BEQ CLIEND ;[no more CLI command names]
  BPL CLIALI ;[not reached address hi-byte]
- BCC CLIRST ;if C=0, compare with next keyword
+ BCC CLITMN ;if C=0, command rejected; test high byte
+ ;must go to CLITMN at the terminator!
+ ;terminator's keyword must NEVER match [i.e. it must be a duplicate]
 ;CLIMFN  ;full name match
 ; found CLI command match
 ; construct JMI hi-byte value to command processing code
@@ -404,7 +460,6 @@ CLIXY2
  INY
 CLIXY1  ;N.B. Y = hi-byte of pointer to rest of line
 CLIXY0
-CLIRTS
 SVACK  ;command accepted by service ROM
  RTS
 
@@ -413,6 +468,12 @@ BASIC  ;select BASIC language ROM
  LDX BROMID
  BMI NBASIC ;[no BASIC ROM]
  JMP ILR2 ;enter BASIC ROM (N.B. A b0=1, enter with C=1)
+
+CLITMN  ;keyword rejected, action address reached
+ ASLA ;test bits 14..8
+ BNE CLIRST ;if high byte was >&80, compare with next keyword
+ ;else &80 = command table terminator, fall through to CLIEND
+
 ;END OF MOS 1.25
 NBASIC  ;BASIC ROM not present so offer to service ROMs
 CLIEND  ;entered here if command not recognised or does not exist
@@ -424,6 +485,7 @@ CLIEND  ;entered here if command not recognised or does not exist
 ; command not accepted by a service ROM
 ; so pass command to filing system
  LDA CLIRY  ;A = offset to command name
+CLIFS
  JSR CLIXY2 ;make XY -> rest of line
  LDAIM FSNAME
  [ STARGO = &00

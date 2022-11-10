@@ -237,16 +237,15 @@ SPLOAD  ;load address, must not corrupt V
  LDA ROMPTR+&00
  JSR SPL ;send address lo-byte
  LDA SEROM
- STA SPWK1
- LDA ROMPTR+&01
- ROLA
- ROLA
- LSR SPWK1
+ LSRA
  RORA
- LSR SPWK1
+ PHA
  RORA
+ EOR ROMPTR+&01
+ ANDIM &C0
+ EOR ROMPTR+&01
  JSR SPL ;send address hi-byte
- LDA SPWK1
+ PLA
  JSR SPL1 ;send address hi-nibble
  PLP
 SRSK0

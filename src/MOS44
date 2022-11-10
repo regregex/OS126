@@ -577,10 +577,9 @@ FSPC  ;set flash space, Y=0, C=1
  STX FLCNT
 ; force mark/space (lsb VPREGA := C)
  LDA VPREGA
- PHP
- RORA
- PLP
- ROLA
+ ;same size, faster, reduce stack load
+ ANDIM &FE
+ ADCIM &00 ;V=0
  STA VPREGA
  STA VPROC0
 FMS1  ; chain from clear escape condition routine

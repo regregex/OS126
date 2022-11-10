@@ -25,12 +25,11 @@ READCH
  LDY NCOLOR ;Is it TTX?
  BNE READCE
  LDAIY ZMEMT ;Yes, then read character direct (Y=0)
- LDYIM &03 ;Look for characters to be swapped
-RDTTXZ DEY
- BMI READKE
- CMPAY TTXTB+&01 ;Is it one of them?
- BNE RDTTXZ
- LDAAY TTXTB ;Cheat in reverse order (see PTTX)
+ ;CS from OSB or RDCHK->RDCHGY->COPYCH
+ ;(or RDCHGS->GKEY..RDCHGY->COPYCH after hacking)
+ ;SEC ;transform only
+ JSR TTXFRM ;convert ASCII to Teletext
+ JSR TTXFRM ;and again to convert Teletext to ASCII
 READKE LDY MODE ;Only way of getting the mode
  TAX
  RTS
@@ -75,24 +74,28 @@ PTCNV LDYIM &07 ;The row to be converted
 PTCNVA STY ZTEMP ;Start of 'convert 1 row' loop
  LDAIM &01 ;The bit pattern to be formed
  STA ZTEMP +&01 ;Finshed when a carry shifted out
+ ;Adds 4 bytes but OS 1.25 gets them anyway
+ ;to avoid diverging from 1.26 before GADDR
+ CMP MASKR ;C=0 if >1bpp
 PTCNVB LDA MASKL ;Isolates the pixel to be tested in the current byte
  STA ZTEMPB ;Must move to next byte when carry shifted out left
  LDAIY ZMEMT ;Get the byte to be tested
  EOR BTCOLF ;Isolate back from foreground
- CLC
+ BCS PTCNVF ;Write byte directly if 1bpp
 PTCNVC BIT ZTEMPB ;Are any of the bits in this pixel set ?
  BEQ PTCNVD ;No?, then this pixel was background
  SEC  ;Yes?, then it was foreground
 PTCNVD ROL ZTEMP +&01 ;Shift this bit into the bit pattern
- BCS PTCNVE ;carry shifted out?, then this pattern is complete
- LSR ZTEMPB ;Isolate the next pixel
+ ROR ZTEMPB ;Isolate the next pixel
  BCC PTCNVC ;carry clear, then continue
+ BMI PTCNVE ;pattern overflow?, then this pattern is complete
  TYA  ;c=1, then examine the next byte in the row
  ADCIM &07 ;(c=1), by adding 8 to Y
  TAY
  BCC PTCNVB ;and continue (branch always taken)
 PTCNVE LDY ZTEMP ;Restore Y
  LDA ZTEMP +&01 ;bit pattern finished, store it in the READWS
+PTCNVF
  STAAY READWS
  DEY  ;& do the next row up
  BPL PTCNVA

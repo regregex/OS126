@@ -175,23 +175,20 @@ MAN11
  CLC
  ADC ATINC ;add incremnet to attenuation
  BVC OK8  ;first check for 8 bit overflow
- ROLA  ;get sign bit into carry
- LDAIM &3F  ;highest value
- BCS OK8
- EORIM &FF ; convert to bottom limit
+ ;else overflow. carry=~b7. generate &C0 if b7=0 or &3F if b7=1
+ ORAIM &7F ;n111 1111 C=~n
+ ADCIM &40 ;~~nn nnnn C=n
 OK8
- STAAX ATTN ;store as new attenuation
- ROLA  ;the following code checks for overflow of attenuation (only a 7 bit number)
- EORAX ATTN
- BPL ATOK
- LDAIM &3F
- BCC LMATN ;[hit #3F limit]
- EORIM &FF ;convert for bottom limit
-LMATN
- STAAX ATTN
+ CMPIM &C0 ;compare b7 and b6 (thanks again Woz)
+ BPL ATOK ;if b7=b6 then value in range
+ ;else overflow. generate &3F if b7=0 or &C0 if b7=1
+ ORAIM &7F ;n111 1111 C=0
+ ADCIM &40 ;~011 1111 C=n
+ ADCIM &80 ;nn~~ ~~~~ C=~n
 ATOK
+ STAAX ATTN ;store as new attenuation
  DEC ATINC
- LDAAX ATTN ;the following code checks that (ATTN-PEAK)*SIGN(increment)>=0
+ ;the following code checks that (ATTN-PEAK)*SIGN(increment)>=0
  SEC
  SBC PEAK
  EOR ATINC
@@ -202,7 +199,7 @@ ATOK
 SMPER   ;same envelope period
  PLA
  EORAX ATTN
- ANDIM &F8
+ ANDIM &78 ;technically correct, though &F8 works fine
  BEQ NNEWA ;no new chip attenuation output (hasn't changed)]
  LDAAX ATTN
  JSR UPATN ;update chip attenuation
@@ -469,10 +466,10 @@ NOCONT
  ANDIM &F8 ;extract 5 envelope bits
  ASLA  ;programmable envelope select bit >carry
  BCC PENV ;[programmed envelope]
- EORIM &FF ;convert box envelope to amplitude
- LSRA
- SEC
- SBCIM &40 ;convert to a signed number
+ ; in: ~b3 ~b2 ~b1 ~b0   x   x   x   x
+ ;out:  x  ~b3  b2  b1  b0   x   x   x
+ LSRA ;convert box envelope to signed amplitude
+ EORIM &38
  JSR UPATN
  LDAIM &FF ;flag box envelope by setting top bit of ENVLP
 PENV

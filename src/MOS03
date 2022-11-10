@@ -76,10 +76,11 @@ DCABB AND NCOLOR
  TAX
  LDAAX FCOLTB -&01
  STAAY FTCOLF ;(Y) set above to 0..3
- CPYIM &02 ;Graphics ?
- BCS DCBAC ;Yes, then set up GPLMDE
- LDA FTCOLF ;No, then set ZORA &
- EORIM &FF ;ZEOR
+ TYA
+ LSRA ;Graphics?
+ BNE DCBAC ;Yes, then set up GPLMDE
+ CLC ;A=0, C=0; SBC takes one's complement
+ SBC FTCOLF ;No, then set ZORA and ZEOR
  STA ZEOR ;ZEOR = NOT foreground
  EOR BTCOLF ;ZORA = ZEOR EOR back
  STA ZORA
@@ -156,32 +157,27 @@ DCC PHP
  LDA QEND-&03 ;Get physical colour
 DCC1 ANDIM NPCOL ;mask off confusing bits
  STAAX PARROT ;Write to list
- TAY
+ STX SEIWKA
  LDA NCOLOR
- STA SEIWKA
  CMPIM &03
  PHP ;Needed later
- TXA ;(A)=logical colour
-DCCALA RORA  ;determine start position =Logi*16/(ncolor+1)*16
- ROR SEIWKA
+ LSRA
+DCCALA LSR SEIWKA  ;determine start position =Logi*16/(ncolor+1)*16
+ RORA
  BCS DCCALA
- ASL SEIWKA
- TYA ;Get physical colour
- ORA SEIWKA
- TAX ;Byte to be given to VPROC1
+ ORAAX PARROT ;Get physical colour
  LDYIM &00 ;Initialise loop counter
 
-DCCALB PLP ;Does NCOLOR=3?
+DCCALB TAX ;Byte to be given to VPROC1
+ PLP ;Does NCOLOR=3?
  PHP
  BNE DCCALC ;No?, then skip
- ANDIM &60 ;If b5 & b6 both set or clear, don't invert them
- BEQ DCCALD
- CMPIM &60
- BEQ DCCALD
- TXA
+ ASLA ;b6,b5 to b7,b6; clear b0
+ ADCIM &40 ;carry doesn't matter (thanks Woz)
+ ASLA ;b6 EOR b5 to C
+ TXA ;restore byte
+ BCC DCCALC ;If b5 & b6 both set or clear, don't invert them
  EORIM &60
- BNE DCCALC ;(branch always taken)
-DCCALD TXA
 DCCALC JSR MVPRC1 ;Save (X) & (Y)
  TYA ;Loop counter
  SEC
@@ -189,7 +185,6 @@ DCCALC JSR MVPRC1 ;Save (X) & (Y)
  TAY
  TXA ;Restore (A)
  ADCIM &10 ;c=0
- TAX
  CPYIM &10
  BCC DCCALB
  PLP
@@ -205,7 +200,7 @@ PRPAL
  TAX
  INY ;(Y):=1
  LDAIY WARGS ;Load physical colour
- JMP DCC1
+ BCC DCC1 ;C=0 from WORD->BYTE2
 
 ;SYN ($16) Change mode
 

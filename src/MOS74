@@ -802,8 +802,7 @@ PRTHL3
  JSR MSGON
  BEQ PRTHLX ;Messages off => exit
 
- LDAIM MCR
- JSR OSWRCH
+ JSR WRCR
 
 ; Note assumed here Y is preserved over
 ;calls to MSGON and OSWRCH.

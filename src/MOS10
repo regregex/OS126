@@ -45,17 +45,6 @@ EMC LDXIM NEWPT-V ;Copy new point & graphics cursor to a safe place
  JSR COPY8
  JMP EMAEX ;& do things to the cursors
 
-;(SORTY exits with (X)<(Y))
-
-SORTA LDXIM NEWPT-V
- LDYIM OLDCS-V
-SORTY LDAAX V+&02
- CMPAY V+&02
- LDAAX V+&03
- SBCAY V+&03
- BMI TRSRTS
- JMP SWAPF
-
 CSRPOS
  LDA CSX ;~~~ Read text cursor position ~~~
  SEC
