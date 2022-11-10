@@ -494,7 +494,7 @@ JMIKEY JMI KEYVEC
  = ":" ;shift '*'
  = MCR ;same shifted
 
- ; $EE75 (for $F075)
+ ; $F075
  ;moving short routine from main code to this space
  ;to consolidate savings into main free space pool
  ;candidates are PUTCHK (6), OPT (5), MCODE (5), WFRED etc (5),

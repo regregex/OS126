@@ -129,6 +129,17 @@ SWAPA LDAAX V
  RTS
 
 
+;(SORTY exits with (X)<(Y))
+
+SORTA LDXIM NEWPT-V
+ LDYIM OLDCS-V
+SORTY LDAAX V+&02
+ CMPAY V+&02
+ LDAAX V+&03
+ SBCAY V+&03
+ BPL SWAPF
+ RTS
+
 ;Soft scroll UP
 
 SSCRUP JSR SSCRIN ;Initialise
@@ -448,15 +459,19 @@ DELA LDAIM &7F ;Point to DEL, only unprintable char. in hard font =$FF...$FF
  LDYIM &00 ;Mode is STORE
  JMP PRANC
 PTTXSP LDAIM &20 ;Print TTX space
-PTTX LDYIM &02 ;Transform these three wretched characters again
-PTTXA CMPAY TTXTB
- BEQ PTTXC
- DEY
- BPL PTTXA
-PTTXB STAIX ZMEMT ;as (X)=0
+PTTX CLC ;write to screen
+TTXFRM ;transform once for ASCII->Teletext, twice for Teletext->ASCII
+ EORIM &23 ;is character ASCII &23, hash?
+ BEQ PTTX5F ;then replace with Teletext &5F
+PTTX23 EORIM &23:EOR:&5F ;else is it ASCII &5F, underscore?
+ BEQ PTTX60 ;then replace with Teletext &60
+PTTX5F EORIM &5F:EOR:&60 ;else is it ASCII &60, sterling?
+ BEQ PTTX23 ;then replace with Teletext &23 (won't loop!)
+PTTX60 EORIM &60 ;else undo our fiddling
+ BCS PTTXC ;if C=1 then transform only else C=0, write to screen
+ STAIX ZMEMT ;as (X)=0
+PTTXC
  RTS
-PTTXC LDAAY TTXTB +&01 ;Cheat as $23->$5F->$60->$23
- BNE PTTXB ;(branch always taken)
 
 ;FOUR colour mode
 
@@ -471,13 +486,14 @@ PFOUR LDAIY ZTEMPC ;Get bit pattern
  ORA ZORA ;of M.S.Nybble
  EOR ZEOR
  STAIY ZMEMT
+ ; same size, reduce stack load
+ PLA  ;Get L.S.Nybble
+ ANDIM &0F
+ TAX
  TYA
  CLC
  ADCIM &08 ;Access next char. cell
  TAY
- PLA  ;Get L.S.Nybble
- ANDIM &0F
- TAX
  LDAAX BPFTB
  ORA ZORA
  EOR ZEOR
@@ -509,7 +525,6 @@ PSXTA LDAIM &00
  ORA ZORA
  EOR ZEOR
  STAIY ZMEMT
- CLC
  TYA  ;Access next char. cell
  ADCIM &08 ;c=0 before & after
  TAY

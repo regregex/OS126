@@ -327,16 +327,16 @@ NPRST  ;no RS423 printer timeout
 ; flash count exhausted
 ; reset FLCNT
 ;
+ ; A=1
  LDX FLSPC
- LDA VPREGA
- LSRA ;C = flash bit
- BCC FLASH1 ;[flash bit = 0]
-; flash bit = 1
+ EOR VPREGA ;invert flash bit
+ LSRA ;C = new flash bit
+ BCS FLASH1 ;[old flash bit = 0]
+; old flash bit = 1
  LDX FLMRK
 FLASH1
 ;
  ROLA ;A = VPREGA
- EORIM &01 ;invert flash bit
  JSR MVPRC0 ;update video processor and register image
  STX FLCNT ;update flash count
 ;
