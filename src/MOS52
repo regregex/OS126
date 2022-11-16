@@ -460,7 +460,7 @@ SCON1
  JSR REMOV ;throw away note
  JSR REMOV ;get duration
  PLP  ;end of indivisible section
- JMP DODUR  ;jump to continue update duration
+ BEQ DODUR  ;Z=1 from NNWAT->STRNT; always branch to update duration
 NOCONT
  TYA   ;restore header byte
  ANDIM &F8 ;extract 5 envelope bits
@@ -495,6 +495,9 @@ PENV
 DODUR
  STAAX DUR ;set up duration
  RTS
+ ;NB swapping JSR CNVRT and STAAX DUR (to save PHA/PLA)
+ ;would cause an interrupt occurring during CNVRT to decrement
+ ;the new count instead of the old.  Preserving current order.
 
 
 NTABL  ;lookup table for low 8 bit of period

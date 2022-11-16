@@ -245,7 +245,7 @@ COMTAB  ;table of MOS commands
  = "" ;terminating keyword [duplicate, NEVER matches]
  = &80 ;end of table
 
- % 321 ;padding
+ % 339 ;padding
 
 GO
  CLC
@@ -278,7 +278,7 @@ RETAIL ;return command line tail to OSARGS control block
  LDAIM &FF ;command line tail is always in I/O processor
  STAZX &02 ;set high word to &FFFF
  STAZX &03
- [ FALSE = &00
+ [ TRUE = &00
  LDAIM SEAL ;set conventional return value (conflicting documentation)
  ]
  RTS
@@ -310,7 +310,7 @@ ABACUS
  = "" ;terminating keyword [duplicate, NEVER matches]
  = &80 ;end of table
 
- % 502 ;padding
+ % 522 ;padding
  ]
 
 CLINT
