@@ -196,7 +196,7 @@ KEYBD3  ;update keyboard status
  LDAIM ZERO
  STA ARCTR
 KBDXS
- JMP KBDY
+ BCS KBDY ;always branch
 
 KCPLK  ;CAPS key processing
  CPXIM CPLKKY
@@ -264,9 +264,8 @@ KCONV6
  ROL KTEMP
  BMI KCONV3 ;[no SHIFT lock]
 ; shift character
- JSR SHIFT
  ROL KTEMP ;skip over CAPITALS lock state
- JMP KCONV4 ;skip processing of CAPITALS lock
+ BCC KCONV4 ;always branch; skip processing of CAPITALS lock
 KCONV3
 ; check for CAPS lock
  ROL KTEMP
@@ -276,8 +275,8 @@ KCONV3
  JSR CAPS
  BCS KCONV2 ;[not alpha]
 ; character is an alpha
- JSR SHIFT ;invert case of alpha
 KCONV4
+ JSR SHIFT ;invert case of alpha
 ; check for shift disabled
  LDX KSTAT
  BPL KCONV1 ;[shift disabled]

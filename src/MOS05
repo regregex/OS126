@@ -452,7 +452,8 @@ DEL JSR BS ;Move back 1 character
  STA ZTEMPC ;(A)=0 from ANOMQ
  LDAIM HFMSB +&01 ;Point to hard font version of space
  STA ZTEMPC +&01
- JMP VDUPRB
+ BNE VDUPRB ;always branch
+
 DELA LDAIM &7F ;Point to DEL, only unprintable char. in hard font =$FF...$FF
  JSR CHADDR
  LDX BGCOLF ;Force this to be graphics background colour

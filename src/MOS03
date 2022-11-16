@@ -215,36 +215,26 @@ SYN LDA QEND ;Get the mode
 ETB LDA QEND-&08 ;Is it the soft font ?
  CMPIM &20 ;Is it a printable character ?
  BCC ETBD
- PHA  ;Yes?, then get group
- LSRA
- LSRA
- LSRA
- LSRA
- LSRA
- TAX  ;Flag set ?
- LDAAX BITTBL
- BIT FNTFLG
+ JSR CHADDR
+ ;returns X=font no., Y=(ZTEMPC+&01)=hard/soft page no.
+ ;A=font flag mask, (ZTEMPC)=hard/soft character address
+ BIT FNTFLG ;flag set ?
  BNE ETBB ;Yes?, then just copy defn.
-
-
- ORA FNTFLG ;Set flag
+ ORA FNTFLG
  STA FNTFLG
- TXA  ;Copy page to soft font
- ANDIM &03
- CLC
- ADCIM HFMSB ;Point to hard font
- STA ZTEMPC +&01
- LDAAX PGSFNT -&01 ;Point to soft font
- STA ZTEMPB +&01
+ STY ZTEMPB +&01 ;point to hard font
+ LDYAX PGSFNT -&01 ;point to soft font
+ STY ZTEMPC +&01
+ LDX ZTEMPC +&00 ;save character offset
  LDYIM &00
- STY ZTEMPB
- STY ZTEMPC
-ETBC LDAIY ZTEMPC
- STAIY ZTEMPB
+ STY ZTEMPB +&00 ;align both pointers
+ STY ZTEMPC +&00
+ETBC LDAIY ZTEMPB ;copy from hard font
+ STAIY ZTEMPC ;to soft font
  DEY
  BNE ETBC
-ETBB PLA
- JSR CHADDR ;Point (ZTEMPC) to soft font
+ STX ZTEMPC +&00 ;restore character offset
+ETBB
  LDYIM &07 ;& copy character into the font
 ETBA LDAAY QEND-&07
  STAIY ZTEMPC
