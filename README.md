@@ -32,17 +32,17 @@ OS 1.26 has the following modifications:
   in slot 0 (thanks to J.G.Harston)
 - Character recognition is faster in two-colour display `MODE`s
 - Semantically transparent optimisations
-- 180 bytes cleared in the main section + 1 existing = 181 bytes free
+- 200 bytes cleared in the main section + 1 existing = 201 bytes free
 - 21 bytes cleared in the top page
 
 The free space is placed at the end of the \*command table, currently
-located at address &DF3F.
+located at address &DF31.
 
 OS 1.26 / NOSP
 --------------
 
 In addition to the above, the [NOSP branch][3] strips speech processor
-support and makes 523 bytes of the ROM available in total.
+support and makes 543 bytes of the ROM available in total.
 
 STARGO
 ------
@@ -60,7 +60,7 @@ option in `src/MOSHdr` enables:
   to paged ROMs only, or to the paged ROM slot number given in hex
 - `*:::` \[&lt;*command*&gt;\] sends a command to the filing system only
 - `*FX 5,n` flashes the keyboard LEDs while waiting for the printer
-- 0 + 1 byte free
+- 18 + 1 bytes free
 
 The rest of this document describes vanilla OS 1.26.
 
@@ -94,7 +94,7 @@ build OS 1.26:
     *Quit
 
 The current ROM image has an MD5SUM of
-`3a50cf46eff947e31dd086370b316276`.
+`2619937c09f2e2ad2fcbcb7e01c27142`.
 
 Build requirements: disc images
 -------------------------------
@@ -118,7 +118,7 @@ Patching the \*command table
 The space now available makes it practical to add *star commands* to the
 built-in OS command set.  New entries can be appended in place of the
 terminator sequence at `src/MOS38` line 310, currently located at
-address &DF3E.
+address &DF30.
 
 Command table entries have the following form:
 
@@ -168,24 +168,24 @@ here, there must remain a `""` entry earlier in the table.
 
 ### Useful addresses
 
-Pointing a \*command at `CLIEND` (&E078) passes it to paged ROMs or the
+Pointing a \*command at `CLIEND` (&E07E) passes it to paged ROMs or the
 current filing system.  This is convenient for disposing of the
 abbreviated forms of a command; the most efficient auxiliary byte value
 is &FF.
 
 To bypass utility ROMs, an action address equal to `JMIFSC - &07`
-(&E081) sends the command straight to the filing system control vector,
+(&E087) sends the command straight to the filing system control vector,
 defined at &021E.
 
-`JMIUSR` (&E69C) sends a \*command to USERV, defined at &0200.  An
+`JMIUSR` (&E6A2) sends a \*command to USERV, defined at &0200.  An
 auxiliary byte value of &01 emulates `*LINE`; other values (between &02
 and &DF inclusive) cause entry into the USERV routine with non-standard
 reason codes.
 
-In a routine handling the new command, `SKIPSP` (&E091) may be passed
+In a routine handling the new command, `SKIPSP` (&E097) may be passed
 the current offset into the command in Y.  It returns a non-space
 character in A, its offset in Y, and `EQ` if that character is CR.
-`SKIPSN` (&E090) is the same but ignores the current character by
+`SKIPSN` (&E096) is the same but ignores the current character by
 advancing Y over it.
 
 As an example, a command named `I` whose routine begins with
@@ -224,7 +224,7 @@ from `src/MOS34`:
 
 Modify line 313 of `src/MOS38` accordingly:
 
-     % 193 ;padding
+     % 213 ;padding
 
 Twenty-five more bytes can be saved by reverting portions of source code
 to the original.  They are:
@@ -288,7 +288,7 @@ Known problems
   (it too can be [reassembled][13] to work with this OS).
 - Slogger's Tape to Challenger 3 ROM (T2C3) 1.00 jumps to the hard-coded
   address of the OSBYTE handler in OS 1.20, causing a crash on the next
-  call to OSBYTE. (Patch &8F15 = `JMP &E7B3`.)
+  call to OSBYTE. (Patch &8F15 = `JMP &E7B9`.)
 - Many software titles, especially games, decrypt themselves using the
   contents of the OS ROM as a key.  These titles are incompatible
   with OS 1.26.
