@@ -247,9 +247,9 @@ COMTAB  ;table of MOS commands
 
  % 18 ;padding
 
-GO
- CLC
 GOIO
+ SEC
+GO
  PHP
  LDXIM INFO +BKEXEC -FBLOCK ;stretch!
  JSR CLRFB
