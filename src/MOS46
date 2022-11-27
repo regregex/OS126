@@ -123,6 +123,11 @@ OSRET
  RTS
 
 
+RSPECH
+WSPECH
+ LDXIM SVBYTE
+ BNE EXTSND ;always branch
+
 BYTELO  ;code has top bit clear - use table lo component
  LDYIM ZERO ;only one argument, set Y=0 for variable settings and ADC ops
  CMPIM BYTEL
