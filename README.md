@@ -42,7 +42,7 @@ OS 1.26 / NOSP
 --------------
 
 In addition to the above, the [NOSP branch][3] strips speech processor
-support and makes 543 bytes of the ROM available in total.
+support and makes 539 bytes of the ROM available in total.
 
 STARGO
 ------
