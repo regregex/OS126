@@ -40,6 +40,16 @@ OS 1.26 / NOSP has the following modifications:
 The free space is placed at the end of the \*command table, currently
 located at address &DEB2.
 
+Speech Driver
+-------------
+
+Optionally, a paged ROM module replaces the speech system functions
+removed from the OS.  `SPDRV` is a [relocatable Sideways ROM module][5]
+in the format developed by J.G.Harston.  The module can be installed in
+a sideways ROM or RAM slot at address &8000 like any paged ROM; or it
+can be combined with other modules to share a slot.  
+Installation notes and source code are found in `spdrv.txt`.
+
 OS 1.26
 -------
 
@@ -80,7 +90,7 @@ running under RISC OS 2 or 3.x.
 
 On a Windows PC it may be convenient to emulate RISC OS itself along
 with the Turbo, to build the ROM image on the local file system.  An
-[article on 4corn][5] provides detailed instructions on how to install
+[article on 4corn][6] provides detailed instructions on how to install
 RPCEmu, assemble a Turbo second processor emulator inside, and build OS
 1.20 in the Turbo emulator.  
 Once you have completed the OS 1.20 build, load the
@@ -105,8 +115,8 @@ To build the disc images from the source, you will need:
 
 - a POSIX environment such as Linux, or MinGW on Windows
 - `unix2mac`, part of the `dos2unix` package
-- for DFS: [MMB Utils][6] by Stephen Harris, which require Perl
-- for ADFS: [Acorn FS Utils][7] by COEUS, which require a
+- for DFS: [MMB Utils][7] by Stephen Harris, which require Perl
+- for ADFS: [Acorn FS Utils][8] by COEUS, which require a
   C compiler
 
 Install the MMB Utils and Acorn FS Utils on your `PATH`, as needed.
@@ -141,7 +151,7 @@ has bit 7 set to mark the end of the command name; this means that bit 6
 must be set as well, to address the constant OS memory between &C000 and
 &FFFF.  It takes a jump from OS ROM code to reach a routine in main
 memory (`JMIUSR` is one, described below).  Code in paged ROM can be
-reached via the [extended vector][8] entry points at &FF00..&FF4E, which
+reached via the [extended vector][9] entry points at &FF00..&FF4E, which
 must be set up before use.  The low byte of the address comes next.
 
 The entry ends with an auxiliary byte that controls the register values
@@ -237,12 +247,12 @@ to the original.  They are:
 - 7 bytes freeing &02CF..D1 for programs (in `src/MOS34`, `src/MOS38`)
 - 4 bytes speeding up character recognition (in `src/MOS11`)
 
-An archive of [OS 1.25][9] is available separately.  The source code in
+An archive of [OS 1.25][10] is available separately.  The source code in
 this archive is manifolded and builds OS 1.20, 1.25, 1.26, STARGO and
 NOSP according to the choice of header file.  A conditional assembly
 reference to `MOS125` or `NOSP` introduces each variation from the
 standard code.  
-Also in this distribution is OS 1.26 patched for [GoSDC][10] tape
+Also in this distribution is OS 1.26 patched for [GoSDC][11] tape
 emulation support, and a copy of Acornsoft's Graphics Extension ROM
 suitable for all the modified OS ROMs.
 
@@ -256,7 +266,7 @@ Due to the amount of published software relying on the exact contents
 of OS 1.20, it is recommended to install OS 1.26 in such a way that
 OS 1.20 remains available.
 
-An OS RAM module from [BooBip.com][11] fits between the OS ROM and its
+An OS RAM module from [BooBip.com][12] fits between the OS ROM and its
 socket, and allows the ROM to start the computer at power up; then it
 can host an alternative OS subsequently softloaded into RAM, while
 providing a second bank of RAM to other code.
@@ -281,11 +291,11 @@ Known problems
 --------------
 
 - Certain \*commands in the Opus DDOS and Challenger ROMs corrupt the
-  stack, causing a crash on exit ([patched disassemblies][12]
+  stack, causing a crash on exit ([patched disassemblies][13]
   are available).
 - Acornsoft's Graphics Extension ROM (GXR) 1.20 ignores all graphics
   commands, as it contains hard-coded internal references to OS 1.20
-  (it too can be [reassembled][13] to work with this OS).
+  (it too can be [reassembled][14] to work with this OS).
 - Slogger's Tape to Challenger 3 ROM (T2C3) 1.00 jumps to the hard-coded
   address of the OSBYTE handler in OS 1.20, causing a crash on the next
   call to OSBYTE. (Patch &8F15 = `JMP &E872`.)
@@ -297,6 +307,7 @@ Known problems
 [2]:  https://stardot.org.uk/forums/viewtopic.php?p=358510#p358510
 [3]:  https://mdfs.net/System/ROMs/AcornMOS/BBC_JGH/MOSnosp.src
 [4]:  https://github.com/regregex/OS126/tree/master/
+[5]:  http://mdfs.net/Software/BBC/Modules/
 [5]:  https://www.4corn.co.uk/articles/65hostandmos/
 [6]:  https://github.com/sweharris/MMB_Utils
 [7]:  https://github.com/SteveFosdick/AcornFsUtils

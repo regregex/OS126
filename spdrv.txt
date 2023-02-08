@@ -1,0 +1,264 @@
+*| spdrv.txt
+*| Greg Cook, 4 January 2023
+*|
+*| This assembles a small paged ROM for the BBC Micro computer which
+*| adds speech processor support to the NOSP, MOSnosp and JGHMOS1
+*| operating system ROMs.
+*|
+*| Usage:
+*|   *EXEC this text, send it over a serial link, or paste it into an
+*|   emulator session, to load the assembler program into BASIC.
+*|   At the end of the file press ESCAPE to regain the BASIC prompt.
+*|   At the BASIC prompt (>) type RUN and then press the RETURN key.
+*|   Load the resulting image into sideways RAM; the command to do this
+*|   varies but the standard one is:
+*|
+*|         *SRLOAD SPDRV 8000 Z
+*|
+*|   Then press CTRL+BREAK to initialise the ROM.
+*|
+*| Caveats:
+*|   SPDRV has been tested on hardware.  SOUND commands to speak from
+*|   PHROM cannot be queued in BeebEm 4.03 (the latest version to
+*|   include speech processor emulation.)
+*|
+*| Installation:
+*|   This program assembles a relocatable Sideways ROM module in the
+*|   format developed by J.G.Harston.  The module can be installed in a
+*|   sideways ROM or RAM slot at address &8000 like any paged ROM; or it
+*|   can be combined with other modules to share a slot.
+*|   For more information see:
+*|     http://mdfs.net/Software/BBC/Modules/
+*|   NB: It is recommended to install this module as the highest-
+*|   priority module in the highest available paged ROM slot (e.g. slot
+*|   15,) to help ensure (a) fast interrupt handling, (b) presenting RFS
+*|   files in PHROMs before those in paged ROMs; (c) detection of RFS
+*|   selecting the next ROM down, which requires this module to be
+*|   installed in a slot higher than 0.
+*|   If this module is relocated within the slot then the "glue logic"
+*|   inserted by SMJoin may be modified to service it before earlier
+*|   modules.  These modules may include an RFS file set which will be
+*|   accessible by RFS if no RFS PHROMs are present.
+*|   This module uses the private byte assigned to its paged ROM slot
+*|   (at &0DF0+X) to store the current RFS PHROM number.
+
+*BASIC
+NEW
+AUTO
+REM >A.SPDRV
+REM Greg Cook 04 Jan 2023 16:40
+ON ERROR Z%=0:CLOSE#0:REPORT:PRINT" at line ";ERL:END
+IF Z%=&FBC3FAF9 Z%=0:meta%=1 ELSE meta%=0
+:
+DIM code% 1023
+bytea=&EF:worda=bytea:bytex=&F0:wordx=bytex:bytey=&F1
+work=&F2:romid=&F4:serom=&F5:romptr=&F6:spwk2=&FB:escflg=&FF
+insvec=&22A:remvec=&22C:shutsp=&261:a6522=&279
+spflag=&27B:spstat=&2D7:ppgtab=&DF0
+pbq=&FE40:ddraq=&FE43:trclq=&FE48:trchq=&FE49
+ifrq=&FE4D:ierq=&FE4E:papq=&FE4F
+osasci=&FFE3:osnewl=&FFE7:oswrch=&FFEE:osbyte=&FFF4
+:
+IF meta% pass1%=4:pass2%=7 ELSE pass1%=4:pass2%=6
+FOR pass%=pass1% TO pass2% STEP pass2%-pass1%
+O%=code%:IF meta% P%=&8000 ELSE P%=&8100
+[OPT pass%
+.lang:EQUB &00:EQUW reloc
+.romsft:JMP serve
+.romtyp:EQUB &82
+.copyrp:EQUB copyr-lang
+.romver:EQUB &04
+.rommsg:EQUS "Speech Driver "
+.vers:EQUB &00:EQUS "0.23 (04 Jan 2023)"
+.copyr:EQUB &00:EQUS "(C)2023 Greg Cook":
+.eottl:EQUB &00
+:
+.serve:CMP #&05:BNE not05
+LDA ifrq:BPL end05
+AND a6522:AND ierq:AND #&20:BEQ end05
+LDX #&00:STA ifrq:STX trchq
+TYA:PHA:JMP svint \C=1 from CMP
+:
+.end05:LDA #&05
+.bail:RTS
+:
+.not05:CMP #&0E:BEQ is0e
+CMP #&01:BNE not01
+\/RS and /WS were pulled high during reset.
+\Service call 1 is also past the point
+\where speech processor presence would have been tested
+\so we assume 1 ms has elapsed.
+BIT pbq:BMI bail
+TYA:PHA
+LDX #&10
+.sprst1
+LDY #&FF
+STY spflag
+JSR wspech
+DEX
+BNE sprst1
+STX trclq:STX trchq
+.end01
+PLA:TAY:LDA #&01
+:
+.not01:CMP #&07:BNE not07
+LDX bytea:CPX #&9E:BEQ osb9e
+CPX #&9F:BNE link
+.osb9f:JSR wspech:JMP claim
+:
+.is0e:TXA:EOR serom:EOR #&0F:AND #&0F:BNE end0e
+LDA ppgtab,X:BPL end0e
+LDA romptr+&01:BMI read
+JSR spload:LDA #&FF:STA romptr+&01
+.read:LDY #&10:JSR wspech
+.osb9e:JSR rspech
+.claim:LDA #&00
+.link:LDX romid:RTS
+:
+.end0e:LDA #&0E:RTS
+:
+.not07:CMP #&08:BNE not08
+LDX worda:CPX #&07:BNE link
+BIT spflag:BPL link \no speech proc
+TYA:PHA:LDY #&01
+LDA (wordx),Y:CMP #&FF:BNE bail08
+\we have a speech command.
+\can only add to queue if an interrupt is pending to remove items -
+\otherwise deadlock!
+BIT spstat:BMI spbusy \speech buffer empty, send current command
+JSR rspech
+EOR #&A0:CMP #&60:BCC spbusy
+JSR prsprq
+.spbusy:PHP
+.write:SEI:LDY #&00:LDA (wordx),Y:JSR insrt:BCC write0
+CLI:SEI:BIT escflg:BMI escape \don't flash LEDs if escape pressed
+JSR flash
+JMP write
+:
+.write0:ROR spstat
+LDY #&03:LDA (wordx),Y:JSR insrt
+LDY #&02:LDA (wordx),Y:JSR insrt
+PLP
+JSR rspech:EOR #&A0:CMP #&60:BCC quit08
+\C=1
+.svint:JSR prsprq:BCS quit08 \prsprq preserves C
+:
+.bail08:PLA:TAY
+.end08:LDA #&08
+:
+.not08:CMP #&0D:BNE not0d
+TYA:EOR #&0F:AND #&0F:CMP romid:BCC past
+LDA #&EF:STA ppgtab,X
+.past:LDA ppgtab,X:BPL end0d
+.skip:INC ppgtab,X:BPL end0d
+TYA:PHA
+LDA #&01:STA romptr+&00:LSRA:STA romptr+&01
+JSR spload
+LDX #&00
+.cmpcpr:LDY #&10:JSR wspech:JSR rspech
+CMP copyr,X:BNE unwind
+INX:CPX #&04:BNE cmpcpr
+LDA #&3E:STA romptr+&00:JSR splind
+LDA #&FF:STA romptr+&01
+EOR romid:AND #&0F:STA serom:PHP
+.escape:PLP
+.quit08:PLA:TAY:JMP claim
+:
+.unwind:PLA:TAY:LDX romid:JMP skip
+:
+.end0d:LDA #&0D
+:
+.not0d:CMP #&09:BNE chain
+LDA (work),Y:CMP #&0D:BNE end09
+LDX #&FF
+.help:JSR osasci
+.help1:INX
+LDA rommsg,X
+BNE help
+CPX #copyr-rommsg
+BCC help1
+JSR osnewl
+.end09:LDA #&09
+.chain:LDX romid:RTS
+:
+.prsprq:PHP:SEI:LDX #&08:STX spwk2
+.sperep:JSR exam:ROR spstat:BMI nspech:TAY:BEQ spok
+JSR rspech:BMI nspech
+.spok:JSR remov:STA serom
+JSR remov:STA romptr+&01:JSR remov:STA romptr+&00
+LDY serom:BEQ isp2:BPL isp3
+TYA:LDX romid:STA ppgtab,X
+BIT serom:BVS rab:JSR spload:BVC ispx
+.rab:ASL romptr+&00:ROL romptr+&01:JSR splind
+.ispx:LDY shutsp:JSR wspech:PLP:RTS
+.isp3:JSR wspech
+.isp2:LDY romptr+&00:JSR wspech
+LDY romptr+&01:JSR wspech
+LSR spwk2:BNE sperep
+.nspech:PLP:RTS
+:
+.splind:JSR spload
+JSR read:STY romptr+&01:JSR read:TYA:LDX #&08
+.reflec:RORA:ROL romptr+&01:DEX:BNE reflec
+RORA:STA romptr+&00
+.spload
+PHP:SEI
+LDA romptr+&00:JSR spl
+LDX romid:LDA ppgtab,X
+LSRA:RORA:PHA:RORA:EOR romptr+&01:AND #&C0:EOR romptr+&01
+JSR spl:PLA:JSR spl1
+PLP:RTS
+:
+.rspech:LDY #00:BEQ sendsp
+:
+.spl
+PHA:JSR spl1:PLA:RORA:RORA:RORA:RORA
+.spl1
+AND #&0F:ORA #&40:TAY
+.wspech
+TYA:LDY #&01
+.sendsp
+PHP:SEI:BIT spflag:BPL sndsx0
+PHA:LDA sendd,Y:STA ddraq
+PLA:STA papq
+LDA sends,Y:STA pbq
+.spwait:BIT pbq:BMI spwait
+LDA papq:PHA
+LDA sendf,Y:STA pbq:PLA
+.sndsx0:PLP:TAY
+.anrts:RTS
+:
+.sendd:EQUB &00:EQUB &FF
+.sends:EQUB &01:EQUB &02
+.sendf:EQUB &09:EQUB &0A
+:
+.insrt:LDX #&08:JMP (insvec)
+.exam:BIT anrts:BVS exam1
+.remov:CLV
+.exam1:JMP (remvec)
+:
+.flash
+LDA bytea:PHA:LDA bytex:PHA:LDA bytey:PHA
+LDA #&76:JSR osbyte
+PLA:STA bytey:PLA:STA bytex:PLA:STA bytea
+RTS
+:
+.reloc
+]
+NEXT
+sr%=0:next%=1
+IF meta% fh%=OPENIN"SPDRV"
+FOR pass%=0 TO reloc-lang-1
+new%=code%?pass%
+IF meta% old%=BGET#fh% ELSE old%=new%
+IF old%<>new% IF old%-new%<>1 CLOSE#fh%:PRINT "Bad difference":END
+IF (new%AND&C0)=&80 sr%=sr% OR new%<>old% AND next%:next%=next%+next%
+IF next% AND &FF ELSE ?O%=sr%:O%=O%+1:sr%=0:next%=1
+NEXT
+IF next%<>1 ?O%=sr%:O%=O%+1
+IF meta% CLOSE#fh%
+OSCLI "SAVE SPDRV "+STR$~code%+" "+STR$~O%+" FFFF8000 FFFF8000"
+IF meta% END ELSE Z%=&FBC3FAF9:RUN
+:
+REM Press <ESCAPE> RUN <RETURN>
+REM End of A.SPDRV
