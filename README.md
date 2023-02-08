@@ -293,7 +293,7 @@ Known problems
   contents of the OS ROM as a key.  These titles are incompatible
   with OS 1.26.
 
-[1]:  http://mdfs.net/Archive/BBCMicro/2006/10/14/174712.htm
+[1]:  https://mdfs.net/Archive/BBCMicro/2006/10/14/174712.htm
 [2]:  https://stardot.org.uk/forums/viewtopic.php?p=358510#p358510
 [3]:  https://github.com/regregex/OS126/tree/nosp/
 [4]:  https://www.4corn.co.uk/articles/65hostandmos/
