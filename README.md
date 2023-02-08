@@ -44,7 +44,7 @@ Speech Driver
 -------------
 
 Optionally, a paged ROM module replaces the speech system functions
-removed from the OS.  `SPDRV` is a [relocatable Sideways ROM module][5]
+removed from the OS.  `SPDRV` is a [relocatable Sideways ROM module][4]
 in the format developed by J.G.Harston.  The module can be installed in
 a sideways ROM or RAM slot at address &8000 like any paged ROM; or it
 can be combined with other modules to share a slot.  
@@ -53,7 +53,7 @@ Installation notes and source code are found in `spdrv.txt`.
 OS 1.26
 -------
 
-The [main branch][4] retains speech processor support and makes 222
+The [main branch][5] retains speech processor support and makes 222
 bytes of the ROM available in total.
 
 STARGO / NOSP
@@ -306,17 +306,17 @@ Known problems
 [1]:  http://mdfs.net/Archive/BBCMicro/2006/10/14/174712.htm
 [2]:  https://stardot.org.uk/forums/viewtopic.php?p=358510#p358510
 [3]:  https://mdfs.net/System/ROMs/AcornMOS/BBC_JGH/MOSnosp.src
-[4]:  https://github.com/regregex/OS126/tree/master/
-[5]:  http://mdfs.net/Software/BBC/Modules/
-[5]:  https://www.4corn.co.uk/articles/65hostandmos/
-[6]:  https://github.com/sweharris/MMB_Utils
-[7]:  https://github.com/SteveFosdick/AcornFsUtils
-[8]:  https://beebwiki.mdfs.net/Paged_ROM#Extended_vectors
-[9]:  http://regregex.bbcmicro.net/#prog.os126
-[10]: https://www.zeridajh.org/hardware/gosdc/index.html
-[11]: http://www.boobip.com/hardware/osram
-[12]: http://regregex.bbcmicro.net/#features.bbc
-[13]: https://github.com/regregex/GXR
+[4]:  http://mdfs.net/Software/BBC/Modules/
+[5]:  https://github.com/regregex/OS126/tree/master/
+[6]:  https://www.4corn.co.uk/articles/65hostandmos/
+[7]:  https://github.com/sweharris/MMB_Utils
+[8]:  https://github.com/SteveFosdick/AcornFsUtils
+[9]:  https://beebwiki.mdfs.net/Paged_ROM#Extended_vectors
+[10]: http://regregex.bbcmicro.net/#prog.os126
+[11]: https://www.zeridajh.org/hardware/gosdc/index.html
+[12]: http://www.boobip.com/hardware/osram
+[13]: http://regregex.bbcmicro.net/#features.bbc
+[14]: https://github.com/regregex/GXR
 
 * * *
 
