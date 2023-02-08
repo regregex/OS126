@@ -268,11 +268,11 @@ The method of softloading and OS selection is up to the user.
 A more economical option is to prepare a 27C256 one-time programmable
 EPROM and permanently modify it to supply one of two 16 KiB images,
 selected by a switch or jumper.  
-After programming the EPROM, the bases of pins 1, 27 and 28 are wired to
-a miniature SPDT switch or three header pins that connect pin 27 (A14)
-*either* to pin 14 (0V) *or* to pin 28 (+5V).  The end of pin 27 is then
-cropped to keep it clear of the socket, and if a header is used, a
-jumper is slid over two appropriate header pins, connecting them
+After programming the EPROM, the bases of pins 14, 27 and 28 are wired
+to a miniature SPDT switch or three header pins that connect pin 27
+(A14) *either* to pin 14 (0V) *or* to pin 28 (+5V).  The end of pin 27
+is then cropped to keep it clear of the socket, and if a header is used,
+a jumper is slid over two appropriate header pins, connecting them
 together.  The EPROM is fitted with care.  The computer then runs the OS
 in the first or second half of the device, respectively.  
 The switch or jumper must not be toggled while the computer is running.
