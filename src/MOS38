@@ -136,16 +136,9 @@ COMTAB  ;table of MOS commands
  ]
  = FSNAME ;enter with XY -> line
 
-; OPT
-;part of a program's operation, has high priority
- = "OPT"
- & /FXN 
- 
- = FXOPT ;enter with Y = offset
-
 ; RUN
 ;must come before ROM to trap *R.
-;slow but provides the computer with work, should not hold it up
+;should be as fast as *wordless to avoid disadvantage
  = "RUN"
  [ STARGO = &00
  & /JMICMD 
@@ -155,8 +148,15 @@ COMTAB  ;table of MOS commands
  
  = FSRUN ;enter with XY -> line
 
+; OPT
+;part of a program's operation, has high priority
+ = "OPT"
+ & /FXN 
+ 
+ = FXOPT ;enter with Y = offset
+
 ; EXEC
-;likewise
+;slow but provides the computer with work, should not hold it up
  = "EXEC"
  & /EXEC
  
@@ -245,7 +245,7 @@ COMTAB  ;table of MOS commands
  = "" ;terminating keyword [duplicate, NEVER matches]
  = &80 ;end of table
 
- % 335 ;padding
+ % 342 ;padding
 
 GOIO
  SEC
@@ -270,14 +270,14 @@ GOTO
  JMP RUNGO ;set up tail from Y and enter user code
 
 RETAIL ;return command line tail to OSARGS control block
-;A=encoded high byte
- EORIM MAGIC ;restore correct high byte
- STAZX &01 ;store in 3MSB
- LDA TAILLO
- STAZX &00 ;store low byte in MSB
- LDAIM &FF ;command line tail is always in I/O processor
- STAZX &02 ;set high word to &FFFF
- STAZX &03
+;Y=high byte
+ STYZX &01 ;store in 3MSB
+ LDY TAILLO
+ STYZX &00 ;store low byte in MSB
+ LDYIM &FF ;command line tail is always in I/O processor
+ STYZX &02 ;set high word to &FFFF
+ STYZX &03
+ INY ;Y=0 for return
  [ TRUE = &00
  LDAIM SEAL ;set conventional return value (conflicting documentation)
  ]
@@ -296,7 +296,7 @@ COLHEX
  BCS ABACUS ;if not then call the ROM anyway!
  ]
  LDAAX ROMS
- BPL FRIEZE ;[not a service ROM] 
+ BPL FRIEZE ;[not a service ROM]
 ABACUS
  LDA ROMID ;save current ROM
  PHA
@@ -310,7 +310,7 @@ ABACUS
  = "" ;terminating keyword [duplicate, NEVER matches]
  = &80 ;end of table
 
- % 518 ;padding
+ % 520 ;padding
  ]
 
 CLINT
@@ -380,7 +380,7 @@ COLON
  LDXIM SVNAME ;else pass to service ROMs only
  JSR SVOP
  BEQ SVACK
-FRIEZE 
+FRIEZE
  JMP MBDCMD
 NOTCO
  |

@@ -442,6 +442,12 @@ PTWO LDAIY ZTEMPC
 
 ;TELETEXT mode
 
+DELA LDAIM &7F ;Point to DEL, only unprintable char. in hard font =$FF...$FF
+ JSR CHADDR
+ LDX BGCOLF ;Force this to be graphics background colour
+ LDYIM &00 ;Mode is STORE
+ BEQ PRANC
+
 ;DEL ($7F) Delete previous char
 
 DEL JSR BS ;Move back 1 character
@@ -454,11 +460,6 @@ DEL JSR BS ;Move back 1 character
  STA ZTEMPC +&01
  BNE VDUPRB ;always branch
 
-DELA LDAIM &7F ;Point to DEL, only unprintable char. in hard font =$FF...$FF
- JSR CHADDR
- LDX BGCOLF ;Force this to be graphics background colour
- LDYIM &00 ;Mode is STORE
- JMP PRANC
 PTTXSP LDAIM &20 ;Print TTX space
 PTTX CLC ;write to screen
 TTXFRM ;transform once for ASCII->Teletext, twice for Teletext->ASCII

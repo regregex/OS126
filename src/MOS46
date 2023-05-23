@@ -71,13 +71,13 @@ BYTE2  ;C=0 => OSWORD call
 ;
 ; allow net to indirect OS call
 ;
- BIT NETIOC
+ LDA NETIOC
+ CLV
  BPL NET1 ;[net not indirecting OS calls]
 ;
 ; indirect OS call thru net
 ;
  TXA ;A := reason code
- CLV
  JSR JMINET ;args in BYTEA, BYTEX, BYTEY (call type in A)
  BVS OSRET ;[net substituted result]
 ;
@@ -162,21 +162,6 @@ BADOSC  ;bad OS call
  RTS
 
 
-MSGON  ;used by CFS
-;Return EQ if messages off and not doing catalogue
-;or during EXEC/SPOOL (during which messages cannot occur
-;since this implies writing chars while within RDCH or WRCH)
-
- LDA ESSEMA
- BMI MSGONY ;Inside RDCH/WRCH -> msgs OFF
-
- LDAIM CATBIT
- AND CFSTAT
- BNE MSGONX ;Out with msgs set.
-
- LDAIM MONBIT
- AND USFLGS
-MSGONX RTS
 
 
 WORD  ;OSWORD call
@@ -221,42 +206,6 @@ WORD  ;OSWORD call
  ASLA ;prepare for Y := 2*code
 ; C=0
  BCC BYTE2 ;[ALWAYS jump, C=0 => OSWORD call]
-
-PEEK  ;read byte from I/O processor
- CLC
-POKE  ;write byte to I/O processor
- TAX ;hold address lo-byte
- INY ;Y=1
- LDAIY WORDX ;get address hi-byte
- PHA ;address in X and 1,S
- LDYIM &04 ;point to byte to write
- LDAIY WORDX
- TAY ;hold byte to write
- PLA ;restore MSB of address
- JSR BOUNCE ;write byte in Y/read byte into A
- LDYIM &04
- STAIY WORDX ;store byte read in OSWORD block
-VER
- BEQ PVER
- LDXIM MCVER ;X=1 for OSBYTE 0,1 MOS version 1
-MSGONY  ;used by MSGON below
- LDAIM ZERO
- RTS
-
-COPYR ;here to save a byte
- = ")"
- = "C"
- = "(" ;BRK forms terminator
-
-PVER
- BRK
- = FX0MSG
- = "OS "
- = VERA
- = "."
- = VERB
- = VERC
- = ZERO
 
 NOTE  ;add note to note buffer
 ; *********************

@@ -68,26 +68,36 @@ HRDRST  ;hard reset
  STA &0000
 CLRPG
  STX &0001
- STAIY &0000
+ INY
+ STAIY &0000 ;saves 163 ms
  CPX &0001
  BNE CLEAR0 ;[16K RAM]
+ INX
+ CPXIM /(NMI )
+ STA WORK
+ STX WORK+1
+ BEQ CLEARA ;leave RTI in place
+ DEY ;otherwise Y=0
+
 ; clear store to $00 (no blobs on screen)
- TAY
- BEQ CLEARA ;branch always
+; done:   0000 even . 0 . .
+;       X WORK odd  x . . .
+;                     Y
 CLEAR
+ STAIY WORK  ;saves 4 ms
+ INY ;1
  STAIY &0000
 CLEARA
- INY
+ STAIY WORK  ;saves 4 ms
+ INY ;2
  STAIY &0000 ;saves 24 ms
- INY
+ STAIY WORK  ;saves 4 ms
+ INY ;3
  STAIY &0000 ;saves 8 ms
- INY
+ STAIY WORK  ;saves 4 ms
+ INY ;0
  STAIY &0000 ;saves 4 ms
- INY
  BNE CLEAR
-; Y=0
- INY
-; Y=1
  INX
  BPL CLRPG
 ; 32K RAM
