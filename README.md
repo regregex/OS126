@@ -24,6 +24,8 @@ OS 1.26 has the following modifications:
 - The paged ROM indirection routine places one byte less on the stack
 - OSBYTE calls to write to I/O memory avoid causing a dummy read cycle
   before the write, which upsets some hardware
+- OSBYTE 206 [does not affect the stability][3] of other OSBYTE calls
+  (thanks to TobyLobster)
 - OSFILE with A=0 (save file) reads data only from the source processor
 - Main memory is cleared faster on power up or 'critical' BREAK
 - Locations &02CF, &02D0 and &02D1 are not touched
@@ -32,17 +34,17 @@ OS 1.26 has the following modifications:
   in slot 0 (thanks to J.G.Harston)
 - Character recognition is faster in two-colour display `MODE`s
 - Semantically transparent optimisations
-- 200 bytes cleared in the main section + 1 existing = 201 bytes free
+- 202 bytes cleared in the main section + 1 existing = 203 bytes free
 - 21 bytes cleared in the top page
 
 The free space is placed at the end of the \*command table, currently
-located at address &DF31.
+located at address &DF3B.
 
 OS 1.26 / NOSP
 --------------
 
-In addition to the above, the [NOSP branch][3] strips speech processor
-support and makes 539 bytes of the ROM available in total.
+In addition to the above, the [NOSP branch][4] strips speech processor
+support and makes 541 bytes of the ROM available in total.
 
 STARGO
 ------
@@ -60,7 +62,7 @@ option in `src/MOSHdr` enables:
   to paged ROMs only, or to the paged ROM slot number given in hex
 - `*:::` \[&lt;*command*&gt;\] sends a command to the filing system only
 - `*FX 5,n` flashes the keyboard LEDs while waiting for the printer
-- 18 + 1 bytes free
+- 25 + 1 bytes free
 
 The rest of this document describes vanilla OS 1.26.
 
@@ -78,7 +80,7 @@ running under RISC OS 2 or 3.x.
 
 On a Windows PC it may be convenient to emulate RISC OS itself along
 with the Turbo, to build the ROM image on the local file system.  An
-[article on 4corn][4] provides detailed instructions on how to install
+[article on 4corn][5] provides detailed instructions on how to install
 RPCEmu, assemble a Turbo second processor emulator inside, and build OS
 1.20 in the Turbo emulator.  
 Once you have completed the OS 1.20 build, load the
@@ -94,7 +96,7 @@ build OS 1.26:
     *Quit
 
 The current ROM image has an MD5SUM of
-`2619937c09f2e2ad2fcbcb7e01c27142`.
+`76a799547ee08fcf2e95553398931dcf`.
 
 Build requirements: disc images
 -------------------------------
@@ -103,8 +105,8 @@ To build the disc images from the source, you will need:
 
 - a POSIX environment such as Linux, or MinGW on Windows
 - `unix2mac`, part of the `dos2unix` package
-- for DFS: [MMB Utils][5] by Stephen Harris, which require Perl
-- for ADFS: [Acorn FS Utils][6] by COEUS, which require a
+- for DFS: [MMB Utils][6] by Stephen Harris, which require Perl
+- for ADFS: [Acorn FS Utils][7] by COEUS, which require a
   C compiler
 
 Install the MMB Utils and Acorn FS Utils on your `PATH`, as needed.
@@ -118,7 +120,7 @@ Patching the \*command table
 The space now available makes it practical to add *star commands* to the
 built-in OS command set.  New entries can be appended in place of the
 terminator sequence at `src/MOS38` line 310, currently located at
-address &DF30.
+address &DF3A.
 
 Command table entries have the following form:
 
@@ -139,7 +141,7 @@ has bit 7 set to mark the end of the command name; this means that bit 6
 must be set as well, to address the constant OS memory between &C000 and
 &FFFF.  It takes a jump from OS ROM code to reach a routine in main
 memory (`JMIUSR` is one, described below).  Code in paged ROM can be
-reached via the [extended vector][7] entry points at &FF00..&FF4E, which
+reached via the [extended vector][8] entry points at &FF00..&FF4E, which
 must be set up before use.  The low byte of the address comes next.
 
 The entry ends with an auxiliary byte that controls the register values
@@ -156,10 +158,10 @@ the GSINIT system call will select the argument.
 OSCLI calls the action address with the carry flag clear (`CC`).  The
 zero flag is set (`EQ`) if and only if there are no arguments after the
 command name.  
-The routine should exit with `RTS` to return from OSCLI.  Registers and
-flags on exit are forfeit, and code intercepting the OSCLI vector may
-alter them *en route* to the caller.  They are not passed to the second
-processor.
+The routine should exit with `RTS` to return from OSCLI.  All registers
+and flags are surrendered on exit, and code intercepting the OSCLI
+vector may alter them *en route* to the caller.  Their values are not
+passed to the second processor.
 
 Be sure to replace the terminator byte at the end of the new table.
 Formerly NUL, its present value is &80.  The parser now also examines
@@ -168,24 +170,24 @@ here, there must remain a `""` entry earlier in the table.
 
 ### Useful addresses
 
-Pointing a \*command at `CLIEND` (&E07E) passes it to paged ROMs or the
+Pointing a \*command at `CLIEND` (&E08A) passes it to paged ROMs or the
 current filing system.  This is convenient for disposing of the
 abbreviated forms of a command; the most efficient auxiliary byte value
 is &FF.
 
 To bypass utility ROMs, an action address equal to `JMIFSC - &07`
-(&E087) sends the command straight to the filing system control vector,
+(&E093) sends the command straight to the filing system control vector,
 defined at &021E.
 
-`JMIUSR` (&E6A2) sends a \*command to USERV, defined at &0200.  An
+`JMIUSR` (&E6AE) sends a \*command to USERV, defined at &0200.  An
 auxiliary byte value of &01 emulates `*LINE`; other values (between &02
 and &DF inclusive) cause entry into the USERV routine with non-standard
 reason codes.
 
-In a routine handling the new command, `SKIPSP` (&E097) may be passed
+In a routine handling the new command, `SKIPSP` (&E0A3) may be passed
 the current offset into the command in Y.  It returns a non-space
 character in A, its offset in Y, and `EQ` if that character is CR.
-`SKIPSN` (&E096) is the same but ignores the current character by
+`SKIPSN` (&E0A2) is the same but ignores the current character by
 advancing Y over it.
 
 As an example, a command named `I` whose routine begins with
@@ -209,40 +211,24 @@ More space at a pinch
 ---------------------
 
 If it comes to the crunch a little more room can be made by
-reassembling, minus some frills.  Delete lines 75..76 and 80..85
-from `src/MOS34`:
+reassembling, minus some frills.  Forty-nine bytes can be saved by
+reverting portions of source code to the original.  They are:
 
-     TAY
-     BEQ CLEARA ;branch always
-
-     INY
-     STAIY &0000 ;saves 24 ms
-     INY
-     STAIY &0000 ;saves 8 ms
-     INY
-     STAIY &0000 ;saves 4 ms
-
-Modify line 313 of `src/MOS38` accordingly:
-
-     % 213 ;padding
-
-Twenty-five more bytes can be saved by reverting portions of source code
-to the original.  They are:
-
-- 3 bytes providing the OSWRSC entry (in `src/MOS99`).
-- 6 bytes calculating the cassette file size (in `src/MOS72`)
+- 24 bytes unrolling the memory clearing loop (in `src/MOS34`)
 - 5 bytes ensuring RFS file searching terminates (in `src/MOS54`)
-- 7 bytes freeing &02CF..D1 for programs (in `src/MOS34`, `src/MOS38`)
+- 6 bytes calculating the cassette file size (in `src/MOS72`)
+- 3 bytes providing the OSWRSC entry (in `src/MOS99`)
 - 4 bytes speeding up character recognition (in `src/MOS11`)
+- 7 bytes freeing &02CF..D1 for programs (in `src/MOS34`, `src/MOS38`).
 
-Applying all but the last two changes yields 26 bytes total and results
-in [OS 1.25][8], available separately.  The source code in this archive
-is manifolded and builds OS 1.20, 1.25, 1.26, STARGO and [NOSP][3]
+Applying all but the last two changes yields 38 bytes total and results
+in [OS 1.25][9], available separately.  The source code in this archive
+is manifolded and builds OS 1.20, 1.25, 1.26, STARGO and [NOSP][4]
 according to the choice of header file: NOSP eliminates a further 316
 bytes of speech processor driver code, based on J.G.Harston's
-[patch][9].  A conditional assembly reference to `MOS125` or `NOSP`
+[patch][10].  A conditional assembly reference to `MOS125` or `NOSP`
 introduces each variation from the standard code.  
-Also in this distribution is OS 1.26 patched for [GoSDC][10] tape
+Also in this distribution is OS 1.26 patched for [GoSDC][11] tape
 emulation support, and a copy of Acornsoft's Graphics Extension ROM
 suitable for all the modified OS ROMs.
 
@@ -256,9 +242,9 @@ Due to the amount of published software relying on the exact contents
 of OS 1.20, it is recommended to install OS 1.26 in such a way that
 OS 1.20 remains available.
 
-An OS RAM module from [BooBip.com][11] fits between the OS ROM and its
-socket, and allows the ROM to start the computer at power up; then it
-can host an alternative OS subsequently softloaded into RAM, while
+An OS RAM module from [BooBip.com][12] fits between the OS ROM and its
+socket, and allows the ROM to start the computer at power up; it can
+then host an alternative OS subsequently softloaded into RAM, while
 providing a second bank of RAM to other code.
 OS 1.26 is one such alternative OS, though like OS 1.20 it is not aware
 of the module and makes no use of the RAM.  Either OS may be installed
@@ -281,31 +267,32 @@ Known problems
 --------------
 
 - Certain \*commands in the Opus DDOS and Challenger ROMs corrupt the
-  stack, causing a crash on exit ([patched disassemblies][12]
+  stack, causing a crash on exit ([patched disassemblies][13]
   are available).
 - Acornsoft's Graphics Extension ROM (GXR) 1.20 ignores all graphics
   commands, as it contains hard-coded internal references to OS 1.20
-  (it too can be [reassembled][13] to work with this OS).
+  (it too can be [reassembled][14] to work with this OS).
 - Slogger's Tape to Challenger 3 ROM (T2C3) 1.00 jumps to the hard-coded
   address of the OSBYTE handler in OS 1.20, causing a crash on the next
-  call to OSBYTE. (Patch &8F15 = `JMP &E7B9`.)
+  call to OSBYTE. (Patch &8F15 = `JMP &E7C5`.)
 - Many software titles, especially games, decrypt themselves using the
   contents of the OS ROM as a key.  These titles are incompatible
   with OS 1.26.
 
 [1]:  https://mdfs.net/Archive/BBCMicro/2006/10/14/174712.htm
 [2]:  https://stardot.org.uk/forums/viewtopic.php?p=358510#p358510
-[3]:  https://github.com/regregex/OS126/tree/nosp/
-[4]:  https://www.4corn.co.uk/articles/65hostandmos/
-[5]:  https://github.com/sweharris/MMB_Utils
-[6]:  https://github.com/SteveFosdick/AcornFsUtils
-[7]:  https://beebwiki.mdfs.net/Paged_ROM#Extended_vectors
-[8]:  http://regregex.bbcmicro.net/#prog.os126
-[9]:  https://mdfs.net/System/ROMs/AcornMOS/BBC_JGH/MOSnosp.src
-[10]: https://www.zeridajh.org/hardware/gosdc/index.html
-[11]: http://www.boobip.com/hardware/osram
-[12]: http://regregex.bbcmicro.net/#features.bbc
-[13]: https://github.com/regregex/GXR
+[3]:  https://stardot.org.uk/forums/viewtopic.php?p=388738#p388738
+[4]:  https://github.com/regregex/OS126/tree/nosp/
+[5]:  https://www.4corn.co.uk/articles/65hostandmos/
+[6]:  https://github.com/sweharris/MMB_Utils
+[7]:  https://github.com/SteveFosdick/AcornFsUtils
+[8]:  https://beebwiki.mdfs.net/Paged_ROM#Extended_vectors
+[9]:  http://regregex.bbcmicro.net/#prog.os126
+[10]: https://mdfs.net/System/ROMs/AcornMOS/BBC_JGH/MOSnosp.src
+[11]: https://www.zeridajh.org/hardware/gosdc/index.html
+[12]: http://www.boobip.com/hardware/osram
+[13]: http://regregex.bbcmicro.net/#features.bbc
+[14]: https://github.com/regregex/GXR
 
 * * *
 
