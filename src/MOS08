@@ -253,27 +253,24 @@ SPAF LDA ZMASK ;START HERE
 SPAE STA ZMASK ;These must preserve c!
  JMP PLOT
 
-;SPB Plots fractional RH byte on LH line end
-
-SPB LDAIM &00
- CLC
- BCC SPBF ;(branch always taken)
-
-SPBA INX
- BNE SPBB
- INC ZTEMP+&01
- BPL SPAE
-SPBB ASLA
- BCS SPBC
-SPBF ORA ZMASK
- BIT ZTEMP
- BEQ SPBA
+SPBD
  EOR ZMASK
  LSRA
  BCC SPAE ;(branch always taken)
 
-SPBC RORA
- SEC
+;SPB Plots fractional RH byte on LH line end
+
+SPB LDAIM &00
+SPBE ASLA ;CC preserved via SPAE->PLOT and seen by caller
+ ORA ZMASK
+ BIT ZTEMP
+ BNE SPBD
+ INX
+ BNE SPBB
+ INC ZTEMP+&01
+ BPL SPAE
+SPBB CMPIM &80
+ BCC SPBE
  BCS SPAE ;(branch always taken)
 
 ;SPS Set up pixel counter

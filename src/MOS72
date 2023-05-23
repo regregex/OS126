@@ -276,18 +276,17 @@ SAVEL1 LDAZX (HIADDR -&FD):AND:&FF
 ;                                not last block
 ;                           ELSE last block
 
- CPX INFO +BKSZEL ;Note X = 0
- LDAIM &01
- SBC INFO +BKSZEH
- BCC SAVEL2 ;$0100 < block size, continue
-
- LDXIM LASTBK ;Else, indicate last block
- BNE SAVEL3 ;And block size correct in INFO area
-
-SAVEL2 LDAIM &01
- STA INFO +BKSZEH ;Default block size = $0100
- STX INFO +BKSZEL ;X always zero
-SAVEL3 STX INFO +BKFLAG
+ CMP INFO +BKSZEL ;Note A = X = Y = 0
+ ROLA ;if L=0 then C := (H<=1) else C := (H==0)
+ CMP INFO +BKSZEH ;use constant C=1 from CMP
+ RORA ;A = $80 if <=$0100, A = 0 if more
+ BMI SAVEL3 ;if last block then don't clamp block size
+SAVEL2 ;X = 0, A = Y = undefined
+ TXA ;clear last block flag
+ STX INFO +BKSZEL  ;Default block size = $0100
+ INX
+ STX INFO +BKSZEH ;Note N=0 preserved by WRBLOK
+SAVEL3 STA INFO +BKFLAG ;WRBLOK clobbers A, X
 
  JSR WRBLOK ;Write out data + header
  BMI SAVFIN ;Last block => finished
@@ -299,10 +298,14 @@ SAVEL3 STX INFO +BKFLAG
  INC INFO +BKNOHI ;Inc. block no. for next time
  BNE SAVELP ;Assumed always +ve
 
-FILENE CMPIM &FF
- BEQ LOADGO
+OLDKEY  ;force old key state
+ STY CKEY ;CKEY := 0
+ STX OKEY ;force old key state
 SAVFIN  ;Exit from SAVE
  RTS
+
+FILENE CMPIM &FF
+ BNE SAVFIN
 
 LOADGO
 
@@ -324,17 +327,17 @@ LOADL6
 ;give BAD ADDRESS error
 
  LDXIM &03
- LDAIM &FF
-LOADL1 PHA  ;Push cumulative AND of address
+ SEC
+LOADL1
  LDAAX INFO +BKLOAD ;Address from command block
  STAAX BKADDR
- PLA
- ANDAX BKADDR
+ BCC LOADL2 ;not ADCIM &00 as V may be in use
+ CMPIM &FF
+LOADL2
  DEX
  BPL LOADL1
 
- CMPIM &FF ;If $FF, all bytes are $FF => error
- BNE LOADLB ;Continue load
+ BCC LOADLB ;If CS, all bytes are $FF => error
 
  JSR BEEPOF ;Motor off/beep
  JMP MBADHX
@@ -440,13 +443,10 @@ RUN
  LDY CLIRY
 RUNGO
  TYA
- PHA
- JSR CLIXY
+ JSR CLIXY2 ;XY = tail ptr, A = Y on entry = offset
  STX TAILLO ;save pointer to command line tail
- TYA
- EORIM MAGIC ;permute so a page of OS ROM becomes zero
- STA TAILHI ;marking all other addresses valid
- PLA
+ INY ;permute so a page of OS ROM becomes zero
+ STY TAILHI ;marking all other addresses valid
  TAY ;set up registers to simulate entry from Acorn DFS
  LDXIM &FF ;from filename comparison
  SEC
@@ -926,6 +926,11 @@ GBLDE DEX
 GBEXY STA TEMP
 GBEXIT INC INPTR ;Inc. buffer ptr. for next time
  JMP GBEXX ;Share exit with PUTBYT
+
+COPYR ;here to save a byte
+ = ")"
+ = "C"
+ = "(" ;BRK forms terminator
 
 GBEOF BRK
  = CFSERD

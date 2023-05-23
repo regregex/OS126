@@ -181,11 +181,10 @@ ARGSW
  BNE UPARGS
  CPYIM &00
  BNE UPARGS
- LDA TAILHI ;OSARGS A=1, Y=0 return command line tail
- BEQ UPARG1 ;return *GO/CFS pointer if valid
+ LDY TAILHI ;OSARGS A=1, Y=0 return command line tail
+ BEQ UPARGS ;return *GO/CFS pointer if valid
+ DEY
  JMP RETAIL
-UPARG1  ;A=0, C=1
- ROLA  ;else restore A=1
 UPARGS  ;call upstream OSARGS
  JMI ARGVEC
  |

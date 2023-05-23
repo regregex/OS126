@@ -463,7 +463,7 @@ POUNDM
 
 ; 'hide' 6 bytes
 JMITST JMI TSTSFT
-JMI JMI JMILO ;jump to specific OSBYTE routine, C=1
+JMIEVT JMI EVTVEC ;user event
 
 ;       ROW     3
  = "1" ;shift '!'
@@ -554,7 +554,6 @@ FLUSH2
 ENDKT
 
 
-JMIEVT JMI EVTVEC ;user event
 
 
 FLUSHC  ;flush buffer

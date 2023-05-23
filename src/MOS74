@@ -701,10 +701,6 @@ WRBKEX RTS
 
 
 
-OLDKEY  ;force old key state
- STY CKEY ;CKEY := 0
- STX OKEY ;force old key state
- RTS
 
 
 

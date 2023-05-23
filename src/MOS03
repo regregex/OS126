@@ -131,14 +131,15 @@ DCDLH JSR DCDLJ
  BPL DCDLH
  RTS
 
-;16 colours - one to one
-
-DCDLI TXA
-
 ;2 colour (TTX also executes this rouine)
 
 DCDLF JSR DCDLJ ;Programme log.=1, phys.=7
  DEC QEND-&04
+
+;16 colours - one to one
+
+DCDLI
+
  LDA QEND-&04
  BNE DCDLF
 DCDLJ STA QEND-&03 ;& fall through to ....
