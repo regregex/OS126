@@ -36,16 +36,16 @@ OS 1.26 / NOSP has the following modifications:
   by J.G.Harston)
 - RFS file searching and `*CAT` terminate when an RFS ROM is present
   in slot 0 (thanks to J.G.Harston)
-- 519 bytes cleared in the main section + 1 existing = 520 bytes free
+- 535 bytes cleared in the main section + 1 existing = 536 bytes free
 - 21 bytes cleared in the top page
 
 The free space is placed at the end of the \*command table, currently
-located at address &DEBC.
+located at address &DEB4.
 
 Speech Driver
 -------------
 
-Optionally, a paged ROM module replaces the speech system functions
+An optional paged ROM module replaces the speech system functions
 removed from the OS.  `SPDRV` is a [relocatable Sideways ROM module][5]
 in the format developed by J.G.Harston.  The module can be installed in
 a sideways ROM or RAM slot at address &8000 like any paged ROM; or it
@@ -55,7 +55,7 @@ Installation notes and source code are found in `spdrv.txt`.
 OS 1.26
 -------
 
-The [main branch][6] retains speech processor support and makes 224
+The [main branch][6] retains speech processor support and makes 240
 bytes of the ROM available in total.
 
 STARGO / NOSP
@@ -74,7 +74,7 @@ option in `src/MOSHdr` enables:
   to paged ROMs only, or to the paged ROM slot number given in hex
 - `*:::` \[&lt;*command*&gt;\] sends a command to the filing system only
 - `*FX 5,n` flashes the keyboard LEDs while waiting for the printer
-- 342 + 1 bytes free
+- 358 + 1 bytes free
 
 The rest of this document describes vanilla OS 1.26 / NOSP.
 
@@ -108,7 +108,7 @@ build OS 1.26 / NOSP, assembled in a file named `nosp`:
     *Quit
 
 The current ROM image has an MD5SUM of
-`87e984f1037286fc282becce1929390f`.
+`8aeaa7290fd57a418d0385215de5a212`.
 
 Build requirements: disc images
 -------------------------------
@@ -132,7 +132,7 @@ Patching the \*command table
 The space now available makes it practical to add *star commands* to the
 built-in OS command set.  New entries can be appended in place of the
 terminator sequence at `src/MOS38` line 310, currently located at
-address &DEBB.
+address &DEB3.
 
 Command table entries have the following form:
 
@@ -183,13 +183,13 @@ here, there must remain a `""` entry earlier in the table.
 
 ### Useful addresses
 
-Pointing a \*command at `CLIEND` (&E148) passes it to paged ROMs or the
+Pointing a \*command at `CLIEND` (&E150) passes it to paged ROMs or the
 current filing system.  This is convenient for disposing of the
 abbreviated forms of a command; the most efficient auxiliary byte value
 is &FF.
 
 To bypass utility ROMs, an action address equal to `JMIFSC - &07`
-(&E151) sends the command straight to the filing system control vector,
+(&E159) sends the command straight to the filing system control vector,
 defined at &021E.
 
 `JMIUSR` (&F09A) sends a \*command to USERV, defined at &0200.  An
@@ -197,10 +197,10 @@ auxiliary byte value of &01 emulates `*LINE`; other values (between &02
 and &DF inclusive) cause entry into the USERV routine with non-standard
 reason codes.
 
-In a routine handling the new command, `SKIPSP` (&E161) may be passed
+In a routine handling the new command, `SKIPSP` (&E169) may be passed
 the current offset into the command in Y.  It returns a non-space
 character in A, its offset in Y, and `EQ` if that character is CR.
-`SKIPSN` (&E160) is the same but ignores the current character by
+`SKIPSN` (&E168) is the same but ignores the current character by
 advancing Y over it.
 
 As an example, a command named `I` whose routine begins with
@@ -285,7 +285,7 @@ Known problems
   (it too can be [reassembled][15] to work with this OS).
 - Slogger's Tape to Challenger 3 ROM (T2C3) 1.00 jumps to the hard-coded
   address of the OSBYTE handler in OS 1.20, causing a crash on the next
-  call to OSBYTE. (Patch &8F15 = `JMP &E87E`.)
+  call to OSBYTE. (Patch &8F15 = `JMP &E886`.)
 - Many software titles, especially games, decrypt themselves using the
   contents of the OS ROM as a key.  These titles are incompatible
   with OS 1.26 / NOSP.
