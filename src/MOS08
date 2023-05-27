@@ -226,7 +226,6 @@ SPLOTX JSR EMAEX ;Finished
 ;SPA Plots fractional LH byte on RH line end
 
 SPA LDA ZMASK ;Push the initial combined mask
- PHA
  CLC
  BCC SPAF ;(branch always taken)
 
@@ -238,8 +237,8 @@ SPAA PLA ;Try next pixel - pull combined mask
 SPAB LSR ZMASK ;Shift mask
  BCS SPAE ;Exit if shifted out of character cell
  ORA ZMASK ;Continue forming combined mask
- PHA ;& push it again
-SPAF LDA ZMASK ;START HERE
+SPAF PHA ;& push it again
+ LDA ZMASK ;START HERE
  BIT ZTEMP ;Is this pixel b/g colour ?
 
  PHP ;Invert z flag if needs be

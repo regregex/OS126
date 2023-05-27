@@ -262,13 +262,9 @@ FCSP1  ;chained branch
 KCONV6
 ; check for SHIFT lock
  ROL KTEMP
- BMI KCONV3 ;[no SHIFT lock]
-; shift character
  ROL KTEMP ;skip over CAPITALS lock state
- BCC KCONV4 ;always branch; skip processing of CAPITALS lock
-KCONV3
+ BCC KCONV4 ;[SHIFT lock]
 ; check for CAPS lock
- ROL KTEMP
  BMI KCONV2 ;[no CAPS lock or SHIFT lock]
 ; convert character to upper case
 ; check for character in the range 'A' to 'Z' or 'a' to 'z'
