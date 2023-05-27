@@ -124,12 +124,9 @@ DCDB STA FTCOLF
 
 ;4 colour, use shift right of $07
 
-DCDLH JSR DCDLJ
- LDA QEND-&03
- LSRA
- DEC QEND-&04
- BPL DCDLH
- RTS
+ JSR DCDLJ ;Programme log.=3, phys.=7
+ DEC QEND-&04 ;Programme log.=2, phys.=3
+ LDAIM &03 ;then 1=1, 0=0
 
 ;2 colour (TTX also executes this rouine)
 

@@ -272,20 +272,18 @@ ELDDN
  BEQ NOFL ;[no flush has been flagged]
  LDAIM ZERO
  STAAX FLUSH ;clear the flush flag
- LDYIM &04  ;the following clears all wait variables
+ LDYIM &03  ;the following clears all wait variables
 SWTLOP
- STAAY WAIT +&03
+ STAAY WAIT +&04
  DEY
- BNE SWTLOP
+ BPL SWTLOP
  STAAX DUR ;set duration to zero => note finished
- DEY
  STY NOWAT ;reset chord building status
-NOFL
- LDAAX WAIT ;check it channel waiting for chord
+NOFL ;A=0
+ LDYAX WAIT ;check it channel waiting for chord
  BEQ NOTWT
- LDA WATGO ;check if chord now ready to play
+ LDY WATGO ;check if chord now ready to play
  BEQ NOTGO ;[chord not ready yet]
- LDAIM ZERO
  STAAX WAIT ;clear waiting for chord status
 NNWAT
  JMP STRNT ;start playing note
@@ -373,17 +371,16 @@ TONE   ;tone channel
  PHA
  ANDIM &03
  STA FRACT ;low 2 bits give fraction of semitone
- LDAIM &00
- STA PRDL
  PLA
  LSRA
  LSRA
+ STA PRDL
 OCTL
  CMPIM &0C ;check if note > one octave
  BCC ENDOL
- INC PRDL ;use PRDL as octave counter for division
  SBCIM &0C
- BNE OCTL ;bne ok since if the answer is zero loop should terminate anyway
+ ROR PRDL ;use PRDL as octave counter for division
+ BMI OCTL ;branch always taken
 ENDOL
  TAY
  LDA PRDL ;number octaves up
@@ -415,13 +412,12 @@ INTRPO
 INTRPE
  STA PRDL
  PLA
- TAY  ;tranfer octave count to Y
- BEQ ODONE ;if lowest octave then no shifts
+ BPL ODONE ;if lowest octave then no shifts
 SSHIFT
  LSR PRDH ;divide period by 2
  ROR PRDL
- DEY
- BNE SSHIFT ;[up another octave]
+ ASLA
+ BMI SSHIFT ;[up another octave]
 ODONE
  LDA PRDL ;extract low four bits of period
  CLC
@@ -467,8 +463,9 @@ NOCONT
  ASLA  ;programmable envelope select bit >carry
  BCC PENV ;[programmed envelope]
  ; in: ~b3 ~b2 ~b1 ~b0   x   x   x   x
- ;out:  x  ~b3  b2  b1  b0   x   x   x
- LSRA ;convert box envelope to signed amplitude
+ ;out: ~b3 ~b3  b2  b1  b0   x   x   x
+ CMPIM &80 ;convert box envelope to signed amplitude
+ RORA
  EORIM &38
  JSR UPATN
  LDAIM &FF ;flag box envelope by setting top bit of ENVLP
