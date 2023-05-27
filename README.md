@@ -224,10 +224,10 @@ More space at a pinch
 ---------------------
 
 If it comes to the crunch a little more room can be made by
-reassembling, minus some frills.  Forty-nine bytes can be saved by
+reassembling, minus some frills.  Fifty-two bytes can be saved by
 reverting portions of source code to the original.  They are:
 
-- 24 bytes unrolling the memory clearing loop (in `src/MOS34`)
+- 27 bytes unrolling the memory clearing loop (in `src/MOS34`)
 - 5 bytes ensuring RFS file searching terminates (in `src/MOS54`)
 - 6 bytes calculating the cassette file size (in `src/MOS72`)
 - 3 bytes providing the OSWRSC entry (in `src/MOS99`)
