@@ -211,17 +211,17 @@ More space at a pinch
 ---------------------
 
 If it comes to the crunch a little more room can be made by
-reassembling, minus some frills.  Forty-nine bytes can be saved by
+reassembling, minus some frills.  Fifty-two bytes can be saved by
 reverting portions of source code to the original.  They are:
 
-- 24 bytes unrolling the memory clearing loop (in `src/MOS34`)
+- 27 bytes unrolling the memory clearing loop (in `src/MOS34`)
 - 5 bytes ensuring RFS file searching terminates (in `src/MOS54`)
 - 6 bytes calculating the cassette file size (in `src/MOS72`)
 - 3 bytes providing the OSWRSC entry (in `src/MOS99`)
 - 4 bytes speeding up character recognition (in `src/MOS11`)
 - 7 bytes freeing &02CF..D1 for programs (in `src/MOS34`, `src/MOS38`).
 
-Applying all but the last two changes yields 38 bytes total and results
+Applying all but the last two changes yields 41 bytes total and results
 in [OS 1.25][9], available separately.  The source code in this archive
 is manifolded and builds OS 1.20, 1.25, 1.26, STARGO and [NOSP][4]
 according to the choice of header file: NOSP eliminates a further 316
