@@ -108,7 +108,7 @@ build OS 1.26 / NOSP, assembled in a file named `nosp`:
     *Quit
 
 The current ROM image has an MD5SUM of
-`8aeaa7290fd57a418d0385215de5a212`.
+`8559cc4a83381b6ac484ff8932eb3b7e`.
 
 Build requirements: disc images
 -------------------------------
