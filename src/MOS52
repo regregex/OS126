@@ -199,7 +199,7 @@ ATOK
 SMPER   ;same envelope period
  PLA
  EORAX ATTN
- ANDIM &78 ;technically correct, though &F8 works fine
+ ANDIM &F8
  BEQ NNEWA ;no new chip attenuation output (hasn't changed)]
  LDAAX ATTN
  JSR UPATN ;update chip attenuation
@@ -280,10 +280,10 @@ SWTLOP
  STAAX DUR ;set duration to zero => note finished
  STY NOWAT ;reset chord building status
 NOFL ;A=0
- LDYAX WAIT ;check it channel waiting for chord
+ CMPAX WAIT ;check it channel waiting for chord
  BEQ NOTWT
- LDY WATGO ;check if chord now ready to play
- BEQ NOTGO ;[chord not ready yet]
+ CMP WATGO ;check if chord now ready to play
+ BEQ NOTGO ;[chord not ready yet] else C=0
  STAAX WAIT ;clear waiting for chord status
 NNWAT
  JMP STRNT ;start playing note
@@ -456,17 +456,17 @@ SCON1
  JSR REMOV ;throw away note
  JSR REMOV ;get duration
  PLP  ;end of indivisible section
- BEQ DODUR  ;Z=1 from NNWAT->STRNT; always branch to update duration
+ BCC DODUR  ;C=0 from NNWAT->STRNT; always branch to update duration
 NOCONT
  TYA   ;restore header byte
  ANDIM &F8 ;extract 5 envelope bits
  ASLA  ;programmable envelope select bit >carry
  BCC PENV ;[programmed envelope]
- ; in: ~b3 ~b2 ~b1 ~b0   x   x   x   x
- ;out: ~b3 ~b3  b2  b1  b0   x   x   x
+ ; in: ~b3 ~b2 ~b1 ~b0   0   0   0   x
+ ;out: ~b3 ~b3  b2  b1  b0   1   1   1
  CMPIM &80 ;convert box envelope to signed amplitude
  RORA
- EORIM &38
+ EORIM &3F
  JSR UPATN
  LDAIM &FF ;flag box envelope by setting top bit of ENVLP
 PENV
