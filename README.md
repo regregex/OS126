@@ -96,7 +96,7 @@ build OS 1.26:
     *Quit
 
 The current ROM image has an MD5SUM of
-`44157d210cee59ea3ebba6c61294c60f`.
+`7876affd61086a3480b118a6ddcf33cf`.
 
 Build requirements: disc images
 -------------------------------
