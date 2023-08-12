@@ -164,7 +164,7 @@ DCCALA LSR SEIWKA  ;determine start position =Logi*16/(ncolor+1)*16
  RORA
  BCS DCCALA
  ORAAX PARROT ;Get physical colour
- LDYIM &00 ;Initialise loop counter
+ LDYIM &F0 ;Initialise loop counter
 
 DCCALB TAX ;Byte to be given to VPROC1
  PLP ;Does NCOLOR=3?
@@ -178,13 +178,13 @@ DCCALB TAX ;Byte to be given to VPROC1
  EORIM &60
 DCCALC JSR MVPRC1 ;Save (X) & (Y)
  TYA ;Loop counter
- SEC
+ CLC
  ADC NCOLOR
  TAY
  TXA ;Restore (A)
  ADCIM &10 ;c=0
- CPYIM &10
- BCC DCCALB
+ INY
+ BMI DCCALB
  PLP
  PLP
  RTS

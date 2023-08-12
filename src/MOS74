@@ -70,7 +70,6 @@ IRUPT
  ;GoMMC tape patch has F58D NOP;NOP
 
  JSR RDSPCH ;Yes, get next byte from ROM
- TAY
  CLC  ;Clear carry => no DCD
  BCC DOIRPT ;Do as per cassette irupt
 
