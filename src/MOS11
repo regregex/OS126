@@ -114,13 +114,13 @@ RPXLD PHA
  JSR GADDV
  BNE RPXLC ;Out of window?, then return $FF.
  LDAIY ZMEMG
+ STA ZTEMP
 RPXLA BCS RPXLB ;kick the bit out again if it wasn't relevant
- LSR ZTEMP
-RPXLB ASLA  ;Shift out the leftmost bit
- ROL ZTEMP ;& shift into the byte to receive the pixel's logical colour
+ LSRA
+RPXLB ASL ZTEMP  ;Shift out the leftmost bit
+ ROLA ;& shift into the byte to receive the pixel's logical colour
  ASL ZMASK ;unless the bit was irrelevant
  BNE RPXLA ;Have we finished ?
- LDA ZTEMP ;Yes?, then isolate the logical colour
  AND NCOLOR
  RTS  ;& finish
 RPXLC LDAIM &FF ;Return $FF if point was outside graphics window
