@@ -1,5 +1,5 @@
 *| spdrv.txt
-*| Greg Cook, 4 January 2023
+*| Greg Cook, 1 September 2023
 *|
 *| This assembles a small paged ROM for the BBC Micro computer which
 *| adds speech processor support to the NOSP, MOSnosp and JGHMOS1
@@ -37,8 +37,7 @@
 *|   installed in a slot higher than 0.
 *|   If this module is relocated within the slot then the "glue logic"
 *|   inserted by SMJoin may be modified to service it before earlier
-*|   modules.  These modules may include an RFS file set which will be
-*|   accessible by RFS if no RFS PHROMs are present.
+*|   modules, which may include an RFS file set.
 *|   This module uses the private byte assigned to its paged ROM slot
 *|   (at &0DF0+X) to store the current RFS PHROM number.
 
@@ -46,7 +45,7 @@
 NEW
 AUTO
 REM >A.SPDRV
-REM Greg Cook 04 Jan 2023 16:40
+REM Greg Cook 01 Sep 2023 14:00
 ON ERROR Z%=0:CLOSE#0:REPORT:PRINT" at line ";ERL:END
 IF Z%=&FBC3FAF9 Z%=0:meta%=1 ELSE meta%=0
 :
@@ -67,9 +66,9 @@ O%=code%:IF meta% P%=&8000 ELSE P%=&8100
 .romsft:JMP serve
 .romtyp:EQUB &82
 .copyrp:EQUB copyr-lang
-.romver:EQUB &04
+.romver:EQUB &05
 .rommsg:EQUS "Speech Driver "
-.vers:EQUB &00:EQUS "0.23 (04 Jan 2023)"
+.vers:EQUB &00:EQUS "0.30 (01 Sep 2023)"
 .copyr:EQUB &00:EQUS "(C)2023 Greg Cook":
 .eottl:EQUB &00
 :
@@ -106,9 +105,10 @@ LDX bytea:CPX #&9E:BEQ osb9e
 CPX #&9F:BNE link
 .osb9f:JSR wspech:JMP claim
 :
-.is0e:TXA:EOR serom:EOR #&0F:AND #&0F:BNE end0e
-LDA ppgtab,X:BPL end0e
-LDA romptr+&01:BMI read
+.is0e:LDA ppgtab,X:BPL end0e
+TXA:EOR serom:EOR #&0F:AND #&0F:BNE end0e
+\A=0
+CLC:SBC romptr+&01:BEQ read \don't load if &FF
 JSR spload:LDA #&FF:STA romptr+&01
 .read:LDY #&10:JSR wspech
 .osb9e:JSR rspech
@@ -132,7 +132,9 @@ JSR prsprq
 .spbusy:PHP
 .write:SEI:LDY #&00:LDA (wordx),Y:JSR insrt:BCC write0
 CLI:SEI:BIT escflg:BMI escape \don't flash LEDs if escape pressed
-JSR flash
+LDA bytea:PHA:LDA bytex:PHA:LDA bytey:PHA
+LDA #&76:JSR osbyte
+PLA:STA bytey:PLA:STA bytex:PLA:STA bytea
 JMP write
 :
 .write0:ROR spstat
@@ -148,24 +150,27 @@ JSR rspech:EOR #&A0:CMP #&60:BCC quit08
 :
 .not08:CMP #&0D:BNE not0d
 TYA:EOR #&0F:AND #&0F:CMP romid:BCC past
-LDA #&EF:STA ppgtab,X
-.past:LDA ppgtab,X:BPL end0d
-.skip:INC ppgtab,X:BPL end0d
-TYA:PHA
+LDA #&F0:STA ppgtab,X:TYA
+.skep:PHA
 LDA #&01:STA romptr+&00:LSRA:STA romptr+&01
 JSR spload
 LDX #&00
 .cmpcpr:LDY #&10:JSR wspech:JSR rspech
 CMP copyr,X:BNE unwind
 INX:CPX #&04:BNE cmpcpr
-LDA #&3E:STA romptr+&00:JSR splind
-LDA #&FF:STA romptr+&01
+JSR indrfs:LDA #&FF:STA romptr+&01
+\also claim RFS if PHROM found from cold
 EOR romid:AND #&0F:STA serom:PHP
 .escape:PLP
 .quit08:PLA:TAY:JMP claim
 :
-.unwind:PLA:TAY:LDX romid:JMP skip
+.unwind:PLA:LDX romid:JMP skip
 :
+.past:LDA ppgtab,X:BPL end0d
+\claim ALL RFS until PHROMs exhausted
+\this means an RFS file set in our slot can respond
+TXA:EOR #&0F:AND #&0F:STA serom
+.skip:INC ppgtab,X:BMI skep:TAY
 .end0d:LDA #&0D
 :
 .not0d:CMP #&09:BNE chain
@@ -197,6 +202,7 @@ LDY romptr+&01:JSR wspech
 LSR spwk2:BNE sperep
 .nspech:PLP:RTS
 :
+.indrfs:LDA #&3E:STA romptr+&00 \romptr+$01 = $00
 .splind:JSR spload
 JSR read:STY romptr+&01:JSR read:TYA:LDX #&08
 .reflec:RORA:ROL romptr+&01:DEX:BNE reflec
@@ -236,12 +242,6 @@ LDA sendf,Y:STA pbq:PLA
 .exam:BIT anrts:BVS exam1
 .remov:CLV
 .exam1:JMP (remvec)
-:
-.flash
-LDA bytea:PHA:LDA bytex:PHA:LDA bytey:PHA
-LDA #&76:JSR osbyte
-PLA:STA bytey:PLA:STA bytex:PLA:STA bytea
-RTS
 :
 .reloc
 ]
