@@ -539,28 +539,19 @@ BUFFIN  ;main loop
 ;
 BUFNQ  ;VDU not queueing
  CMPIM MDEL
- BNE BUFNXA ;[not DEL]
-;
-; DEL received
-;
- CPYIM ZERO
- BEQ BUFFIN ;[delete at start of line]
-;
-; C=1, A=DEL
- DEY
- BCS BFWRCH ;[ALWAYS jump, reflect DEL and get next char]
-; NEVER fall thru
-
-BUFNXA
+ BEQ BUFCNL ;[DEL received]
  CMPIM MNAK
  BNE BUFNXB ;[not DEL or NAK]
- LDAIM MDEL
- INY
-BUFCNL  ;output DEL for each character in the buffer
- DEY
+ CLC
+BUFCNL  ;output DEL once (CC) or for each character in the buffer
+ TYA
  BEQ BUFFIN ;[reached start of line]
+ DEY
+ LDAIM MDEL
+ BCS BFWRCH ;[if DEL, reflect DEL and get next char]
  JSR OSWRCH
- JMP BUFCNL ;[ALWAYS jump, more characters to delete]
+ CLC
+ BCC BUFCNL ;[ALWAYS jump, more characters to delete]
 ; NEVER fall thru
 ;
 

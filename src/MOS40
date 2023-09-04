@@ -190,11 +190,10 @@ SAVEX  ;SAVE command
 ; read TO address
 ; check if preceeded by '+'
 ;
- CLV
  LDAIY WORK
- CMPIM "+"
- BNE SAVEX3 ;['+' not present]
- BIT FFBYT ;V=1
+ EORIM "+":EOR:&80
+ ADCIM &FE ;c=1, set V iff symbol='+'
+ BVC SAVEX3 ;['+' not present]
  INY ;skip '+' symbol
 SAVEX3
  LDXIM FTO
