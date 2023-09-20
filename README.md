@@ -36,11 +36,11 @@ OS 1.26 / NOSP has the following modifications:
   by J.G.Harston)
 - RFS file searching and `*CAT` terminate when an RFS ROM is present
   in slot 0 (thanks to J.G.Harston)
-- 544 bytes cleared in the main section + 1 existing = 545 bytes free
+- 548 bytes cleared in the main section + 1 existing = 549 bytes free
 - 21 bytes cleared in the top page
 
 The free space is placed at the end of the \*command table, currently
-located at address &DEB2.
+located at address &DEAE.
 
 Speech Driver
 -------------
@@ -55,7 +55,7 @@ Installation notes and source code are found in `spdrv.txt`.
 OS 1.26
 -------
 
-The [main branch][6] retains speech processor support and makes 249
+The [main branch][6] retains speech processor support and makes 253
 bytes of the ROM available in total.
 
 STARGO / NOSP
@@ -74,7 +74,7 @@ option in `src/MOSHdr` enables:
   to paged ROMs only, or to the paged ROM slot number given in hex
 - `*:::` \[&lt;*command*&gt;\] sends a command to the filing system only
 - `*FX 5,n` flashes the keyboard LEDs while waiting for the printer
-- 367 + 1 bytes free
+- 371 + 1 bytes free
 
 The rest of this document describes vanilla OS 1.26 / NOSP.
 
@@ -108,7 +108,7 @@ build OS 1.26 / NOSP, assembled in a file named `nosp`:
     *Quit
 
 The current ROM image has an MD5SUM of
-`feed605fa1a263031a8fc5dfe356e397`.
+`131764c9b69b05137dacb40212c35458`.
 
 Build requirements: disc images
 -------------------------------
@@ -132,7 +132,7 @@ Patching the \*command table
 The space now available makes it practical to add *star commands* to the
 built-in OS command set.  New entries can be appended in place of the
 terminator sequence at `src/MOS38` line 310, currently located at
-address &DEB1.
+address &DEAD.
 
 Command table entries have the following form:
 

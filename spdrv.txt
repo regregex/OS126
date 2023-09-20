@@ -1,5 +1,5 @@
 *| spdrv.txt
-*| Greg Cook, 1 September 2023
+*| Greg Cook, 15 September 2023
 *|
 *| This assembles a small paged ROM for the BBC Micro computer which
 *| adds speech processor support to the NOSP, MOSnosp and JGHMOS1
@@ -45,7 +45,7 @@
 NEW
 AUTO
 REM >A.SPDRV
-REM Greg Cook 01 Sep 2023 14:00
+REM Greg Cook 15 Sep 2023 12:10
 ON ERROR Z%=0:CLOSE#0:REPORT:PRINT" at line ";ERL:END
 IF Z%=&FBC3FAF9 Z%=0:meta%=1 ELSE meta%=0
 :
@@ -66,9 +66,9 @@ O%=code%:IF meta% P%=&8000 ELSE P%=&8100
 .romsft:JMP serve
 .romtyp:EQUB &82
 .copyrp:EQUB copyr-lang
-.romver:EQUB &05
+.romver:EQUB &06
 .rommsg:EQUS "Speech Driver "
-.vers:EQUB &00:EQUS "0.30 (01 Sep 2023)"
+.vers:EQUB &00:EQUS "0.31 (15 Sep 2023)"
 .copyr:EQUB &00:EQUS "(C)2023 Greg Cook":
 .eottl:EQUB &00
 :
@@ -151,7 +151,7 @@ JSR rspech:EOR #&A0:CMP #&60:BCC quit08
 .not08:CMP #&0D:BNE not0d
 TYA:EOR #&0F:AND #&0F:CMP romid:BCC past
 LDA #&F0:STA ppgtab,X:TYA
-.skep:PHA
+.step:PHA
 LDA #&01:STA romptr+&00:LSRA:STA romptr+&01
 JSR spload
 LDX #&00
@@ -164,13 +164,13 @@ EOR romid:AND #&0F:STA serom:PHP
 .escape:PLP
 .quit08:PLA:TAY:JMP claim
 :
-.unwind:PLA:LDX romid:JMP skip
-:
 .past:LDA ppgtab,X:BPL end0d
 \claim ALL RFS until PHROMs exhausted
 \this means an RFS file set in our slot can respond
-TXA:EOR #&0F:AND #&0F:STA serom
-.skip:INC ppgtab,X:BMI skep:TAY
+TXA:EOR #&0F:AND #&0F:STA serom:BPL skip
+:
+.unwind:PLA:LDX romid
+.skip:INC ppgtab,X:BMI step:TAY
 .end0d:LDA #&0D
 :
 .not0d:CMP #&09:BNE chain
@@ -202,7 +202,7 @@ LDY romptr+&01:JSR wspech
 LSR spwk2:BNE sperep
 .nspech:PLP:RTS
 :
-.indrfs:LDA #&3E:STA romptr+&00 \romptr+$01 = $00
+.indrfs:LDA #&3E:STA romptr+&00 \romptr+&01 = &00
 .splind:JSR spload
 JSR read:STY romptr+&01:JSR read:TYA:LDX #&08
 .reflec:RORA:ROL romptr+&01:DEX:BNE reflec
