@@ -381,7 +381,6 @@ PRANC JSR SETZG ;Initialise ZGORA & ZGEOR
  JSR COPYFA ;Copy GCSIY to APCS2 ...
  LDYIM &00 ;Initialise row counter
 PRANMC STY ZTEMPB
- LDY ZTEMPB
  LDAIY ZTEMPC ;Anything to do ?
  BEQ PRANMG ;No, then skip
  STA ZTEMPB +&01
@@ -508,28 +507,28 @@ PSXTC RTS  ;Also used by PSXTN
 
 ;SIXTEEN colour mode
 
-PSXTB TYA  ;Ref.the 1st cell again
- SBCIM &21 ;As c=1
- BMI PSXTC ;Finished ?
+PSXTB ;Ref.the 1st cell again
+ BEQ PSXTC ;Finished ?
  TAY  ;No, then carry on ..
+ DEY
 
 PSXTN LDAIY ZTEMPC ;Get bit pattern
- STA ZTEMPB ;For Rotate lefts
- SEC  ;Marker bit,=1 1st time only
-PSXTA LDAIM &00
- ROL ZTEMPB ;ROL to include marker
- BEQ PSXTB ;Finished ?
+PSXTA ASLA
  ROLA
- ASL ZTEMPB
- ROLA  ;c=0 here, (A)=next 2 bits
+ STA ZTEMPB
+ ANDIM &01
+ ROLA  ;(A)=next 2 bits
  TAX  ;Get expanded bit pattern
  LDAAX BPSTB
  ORA ZORA
  EOR ZEOR
  STAIY ZMEMT
  TYA  ;Access next char. cell
- ADCIM &08 ;c=0 before & after
+ SBCIM &17 ;c=0, subtract $18
+ BCS PSXTB
+ ANDIM &1F ;c=0 before & after
  TAY
+ LDA ZTEMPB
  BCC PSXTA ;(branch always taken)
 
 ;Addresses character in soft font.
