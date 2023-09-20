@@ -34,17 +34,17 @@ OS 1.26 has the following modifications:
   in slot 0 (thanks to J.G.Harston)
 - Character recognition is faster in two-colour display `MODE`s
 - Semantically transparent optimisations
-- 227 bytes cleared in the main section + 1 existing = 228 bytes free
+- 231 bytes cleared in the main section + 1 existing = 232 bytes free
 - 21 bytes cleared in the top page
 
 The free space is placed at the end of the \*command table, currently
-located at address &DF31.
+located at address &DF2D.
 
 OS 1.26 / NOSP
 --------------
 
 In addition to the above, the [NOSP branch][4] strips speech processor
-support and makes 566 bytes of the ROM available in total.  
+support and makes 570 bytes of the ROM available in total.  
 An optional paged ROM module, `SPDRV`, restores speech system
 functions.
 
@@ -64,7 +64,7 @@ option in `src/MOSHdr` enables:
   to paged ROMs only, or to the paged ROM slot number given in hex
 - `*:::` \[&lt;*command*&gt;\] sends a command to the filing system only
 - `*FX 5,n` flashes the keyboard LEDs while waiting for the printer
-- 50 + 1 bytes free
+- 54 + 1 bytes free
 
 The rest of this document describes vanilla OS 1.26.
 
@@ -98,7 +98,7 @@ build OS 1.26:
     *Quit
 
 The current ROM image has an MD5SUM of
-`e768ad799e756f581e41f92d15c5ff0d`.
+`06f55fe10799190862a252caee632151`.
 
 Build requirements: disc images
 -------------------------------
@@ -122,7 +122,7 @@ Patching the \*command table
 The space now available makes it practical to add *star commands* to the
 built-in OS command set.  New entries can be appended in place of the
 terminator sequence at `src/MOS38` line 310, currently located at
-address &DF30.
+address &DF2C.
 
 Command table entries have the following form:
 
