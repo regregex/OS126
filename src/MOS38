@@ -245,7 +245,7 @@ COMTAB  ;table of MOS commands
  = "" ;terminating keyword [duplicate, NEVER matches]
  = &80 ;end of table
 
- % 50 ;padding
+ % 54 ;padding
 
 GOIO
  SEC
@@ -310,7 +310,7 @@ ABACUS
  = "" ;terminating keyword [duplicate, NEVER matches]
  = &80 ;end of table
 
- % 228 ;padding
+ % 232 ;padding
  ]
 
 CLINT
