@@ -460,7 +460,8 @@ DEL JSR BS ;Move back 1 character
  BNE VDUPRB ;always branch
 
 PTTXSP LDAIM &20 ;Print TTX space
-PTTX CLC ;write to screen
+ SEC ;write to screen
+PTTX ;C=1 from NOTCEA->VDUPR
 TTXFRM ;transform once for ASCII->Teletext, twice for Teletext->ASCII
  EORIM &23 ;is character ASCII &23, hash?
  BEQ PTTX5F ;then replace with Teletext &5F
@@ -469,13 +470,15 @@ PTTX23 EORIM &23:EOR:&5F ;else is it ASCII &5F, underscore?
 PTTX5F EORIM &5F:EOR:&60 ;else is it ASCII &60, sterling?
  BEQ PTTX23 ;then replace with Teletext &23 (won't loop!)
 PTTX60 EORIM &60 ;else undo our fiddling
- BCS PTTXC ;if C=1 then transform only else C=0, write to screen
+ BCC PTTXC ;if C=0 then transform only else C=1, write to screen
  STAIX ZMEMT ;as (X)=0
 PTTXC
  RTS
 
 ;FOUR colour mode
 
+PFOURA TAY
+ DEY
 PFOUR LDAIY ZTEMPC ;Get bit pattern
  PHA  ;Push for L.S.Nybble
  LSRA
@@ -492,17 +495,15 @@ PFOUR LDAIY ZTEMPC ;Get bit pattern
  ANDIM &0F
  TAX
  TYA
- CLC
- ADCIM &08 ;Access next char. cell
+ EORIM &08 ;Access next char. cell
  TAY
  LDAAX BPFTB
  ORA ZORA
  EOR ZEOR
  STAIY ZMEMT
  TYA
- SBCIM &08 ;c=0, thus subt. 9
- TAY
- BPL PFOUR
+ EORIM &08
+ BNE PFOURA
 PSXTC RTS  ;Also used by PSXTN
 
 ;SIXTEEN colour mode
