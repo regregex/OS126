@@ -27,7 +27,7 @@ READCH
  LDAIY ZMEMT ;Yes, then read character direct (Y=0)
  ;CS from OSB or RDCHK->RDCHGY->COPYCH
  ;(or RDCHGS->GKEY..RDCHGY->COPYCH after hacking)
- ;SEC ;transform only
+ CLC ;transform only
  JSR TTXFRM ;convert ASCII to Teletext
  JSR TTXFRM ;and again to convert Teletext to ASCII
 READKE LDY MODE ;Only way of getting the mode
@@ -36,9 +36,8 @@ READKE LDY MODE ;Only way of getting the mode
 
 
 READCE JSR PTCNV ;Get the bit pattern to READWS
- LDXIM &20 ;First character to be checked
-READKF TXA  ;Address charcter
- BEQ READKE ;Finished search?
+ LDAIM &20 ;First character to be checked
+READKF  ;Address charcter
  PHA
  JSR CHADDR ;Result to ZTEMPC
  PLA
@@ -58,7 +57,9 @@ READKC INX  ;Next character up
  ADCIM &08
  STA ZTEMPC
  BNE READKA ;More on this page?
- BEQ READKF ;(branch always taken)
+ TXA ;Finished search?
+ BNE READKF ;No?, then try next page
+ BEQ READKE ;(branch always taken)
 
 ;Converts the 8,16 or 32 byte character on the screen to an 8 byte
 ;bit pattern in Q .. Q+07. Not very fast, in particular, the 8 byte
@@ -99,6 +100,7 @@ PTCNVF
  STAAY READWS
  DEY  ;& do the next row up
  BPL PTCNVA
+RPXLC LDAIM &FF ;Return $FF if point was outside graphics window
  RTS  ;or return
 
 ;RPXL Reads the pixel at V+(A),
@@ -122,8 +124,6 @@ RPXLB ASL ZTEMP  ;Shift out the leftmost bit
  ASL ZMASK ;unless the bit was irrelevant
  BNE RPXLA ;Have we finished ?
  AND NCOLOR
- RTS  ;& finish
-RPXLC LDAIM &FF ;Return $FF if point was outside graphics window
 RPXLX RTS ;& finish
 
 ;Window a point, & plot if in window
