@@ -242,10 +242,9 @@ COMTAB  ;table of MOS commands
 
  = /LANG ;assumed -ve; stored as default jump address
 
- = "" ;terminating keyword [duplicate, NEVER matches]
- = &80 ;end of table
+ = ZERO ;end of table
 
- % 371 ;padding
+ % 370 ;padding
 
 GOIO
  SEC
@@ -307,10 +306,9 @@ ABACUS
  BNE FRIEZE ;then raise "Bad command"
  JMP SVOP3 ;[service claimed, do not offer to other ROMs]
  |
- = "" ;terminating keyword [duplicate, NEVER matches]
- = &80 ;end of table
+ = ZERO ;end of table
 
- % 549 ;padding
+ % 548 ;padding
  ]
 
 CLINT
@@ -405,28 +403,30 @@ CLIADV ; compare characters
  ;0 0 0 mismatch                skip            y (won't match ".")
  ;0 0 1 end of user word/abbr.  skip/accept     y
  ;0 1 0 characters match        advance         n
- ;0 1 1 impossible              -               -
+ ;0 1 1 end of user word        skip            y (won't find ".")
  ;1 0 0 end of keyword          skip            n
  ;1 0 1 end of both words       accept          n
+ BCS CLIFIN ; if C=1, test N
+ ;x x 0
  BEQ CLIADV ; if Z=1 C=0 then characters match, advance
- ;x 0 x
+ ;x 0 0
 CLIFIN
+ ;x 0 0 / x x 1
  BMI CLISKP ; if N=1 then skip or set up X and accept
- ;0 0 x
+ ;0 0 0 / 0 x 1
  LDAIY WORK ; restore user character
  INY ; advance pointer past dot
  EORIM ".":EOR:&FF ; if it was ".", now A=&FF
  CMPIM &FF ; C=0 if mismatch, skip; C=1 if abbreviation, accept
 CLISKP
- ;x 0 x
+ ;0 0 0 / 0 x 1 / 1 0 x
  INX ; skip high byte of action address
 CLIALI ; align to keyword terminator
  INX ; advance table pointer or skip low byte of action address
  LDAAX COMTAB -&02 ; test table byte at original offset
+ BEQ CLIEND ;[no more CLI command names]
  BPL CLIALI ;[not reached address hi-byte]
- BCC CLITMN ;if C=0, command rejected; test high byte
- ;must go to CLITMN at the terminator!
- ;terminator's keyword must NEVER match [i.e. it must be a duplicate]
+ BCC CLIRST ;if C=0, compare with next keyword
 ;CLIMFN  ;full name match
 ; found CLI command match
 ; construct JMI hi-byte value to command processing code
@@ -468,11 +468,6 @@ BASIC  ;select BASIC language ROM
  LDX BROMID
  BMI NBASIC ;[no BASIC ROM]
  JMP ILR2 ;enter BASIC ROM (N.B. A b0=1, enter with C=1)
-
-CLITMN  ;keyword rejected, action address reached
- ASLA ;test bits 14..8
- BNE CLIRST ;if high byte was >&80, compare with next keyword
- ;else &80 = command table terminator, fall through to CLIEND
 
 ;END OF MOS 1.25
 NBASIC  ;BASIC ROM not present so offer to service ROMs
