@@ -36,7 +36,7 @@ OS 1.26 / NOSP has the following modifications:
   by J.G.Harston)
 - RFS file searching and `*CAT` terminate when an RFS ROM is present
   in slot 0 (thanks to J.G.Harston)
-- 548 bytes cleared in the main section + 1 existing = 549 bytes free
+- 547 bytes cleared in the main section + 1 existing = 548 bytes free
 - 21 bytes cleared in the top page
 
 The free space is placed at the end of the \*command table, currently
@@ -55,7 +55,7 @@ Installation notes and source code are found in `spdrv.txt`.
 OS 1.26
 -------
 
-The [main branch][6] retains speech processor support and makes 253
+The [main branch][6] retains speech processor support and makes 252
 bytes of the ROM available in total.
 
 STARGO / NOSP
@@ -74,7 +74,7 @@ option in `src/MOSHdr` enables:
   to paged ROMs only, or to the paged ROM slot number given in hex
 - `*:::` \[&lt;*command*&gt;\] sends a command to the filing system only
 - `*FX 5,n` flashes the keyboard LEDs while waiting for the printer
-- 371 + 1 bytes free
+- 370 + 1 bytes free
 
 The rest of this document describes vanilla OS 1.26 / NOSP.
 
@@ -108,7 +108,7 @@ build OS 1.26 / NOSP, assembled in a file named `nosp`:
     *Quit
 
 The current ROM image has an MD5SUM of
-`671e01d6ca0b3e5b336ed26b91a3b150`.
+`db1cc1118afc55e551e79cd6b80564cd`.
 
 Build requirements: disc images
 -------------------------------
@@ -131,7 +131,7 @@ Patching the \*command table
 
 The space now available makes it practical to add *star commands* to the
 built-in OS command set.  New entries can be appended in place of the
-terminator sequence at `src/MOS38` line 310, currently located at
+terminating NUL at `src/MOS38` line 309, currently located at
 address &DEAD.
 
 Command table entries have the following form:
@@ -176,10 +176,7 @@ and flags are surrendered on exit, and code intercepting the OSCLI
 vector may alter them *en route* to the caller.  Their values are not
 passed to the second processor.
 
-Be sure to replace the terminator byte at the end of the new table.
-Formerly NUL, its present value is &80.  The parser now also examines
-the empty string between it and the last command, and to prevent a match
-here, there must remain a `""` entry earlier in the table.
+Be sure to replace the terminating NUL at the end of the new table.
 
 ### Useful addresses
 
@@ -216,7 +213,7 @@ reach the NFS ROM.
 After making changes
 --------------------
 
-Adjust the amount of padding at line 313 of `src/MOS38` to ensure that
+Adjust the amount of padding at line 311 of `src/MOS38` to ensure that
 `src/MOS76` assembles code up to &FBFF exactly.  The assembler will warn
 of code overrunning into the FRED area - but not of falling short.
 
