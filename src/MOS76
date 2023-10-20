@@ -515,19 +515,19 @@ CHKHND
 ;Check handle in Y is open
 ;and corresponds to mask in A
 
- STA TEMP
+ ;squash and bugfix: Y=0 not accepted by RFS when OUTHND open in CFS
+ AND CFSTAT
+ CPYIM OUTHND
+ BNE CHKHN1
+ DEY
+ LSRA
+CHKHN1
+ LSRA
+ BCC HNDERR
+ DEY
  TYA
- EOR SROMSW ;Reverse SFS bit in handle if in SFS
- TAY
- LDA CFSTAT
- AND TEMP ;Mask out bits not required
- LSRA
- DEY
- BEQ CHKHN1
- LSRA
- DEY
- BNE HNDERR
-CHKHN1 BCS CHKHXX
+ EOR SROMSW
+ BEQ CHKHXX
 
 
 HNDERR BRK
