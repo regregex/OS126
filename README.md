@@ -27,6 +27,7 @@ OS 1.26 / NOSP has the following modifications:
 - OSBYTE 206 [does not affect the stability][3] of other OSBYTE calls
   (thanks to TobyLobster)
 - OSFILE with A=0 (save file) reads data only from the source processor
+- File handle 0 is not valid in RFS
 - Main memory is cleared faster on power up or 'critical' BREAK
 - Locations &02CF, &02D0 and &02D1 are not touched
 - Locations &C4 and &CB are unused while the CFS or RFS is active
@@ -36,7 +37,7 @@ OS 1.26 / NOSP has the following modifications:
   by J.G.Harston)
 - RFS file searching and `*CAT` terminate when an RFS ROM is present
   in slot 0 (thanks to J.G.Harston)
-- 547 bytes cleared in the main section + 1 existing = 548 bytes free
+- 552 bytes cleared in the main section + 1 existing = 553 bytes free
 - 21 bytes cleared in the top page
 
 The free space is placed at the end of the \*command table, currently
@@ -55,7 +56,7 @@ Installation notes and source code are found in `spdrv.txt`.
 OS 1.26
 -------
 
-The [main branch][6] retains speech processor support and makes 252
+The [main branch][6] retains speech processor support and makes 257
 bytes of the ROM available in total.
 
 STARGO / NOSP
@@ -74,7 +75,7 @@ option in `src/MOSHdr` enables:
   to paged ROMs only, or to the paged ROM slot number given in hex
 - `*:::` \[&lt;*command*&gt;\] sends a command to the filing system only
 - `*FX 5,n` flashes the keyboard LEDs while waiting for the printer
-- 370 + 1 bytes free
+- 375 + 1 bytes free
 
 The rest of this document describes vanilla OS 1.26 / NOSP.
 
@@ -108,7 +109,7 @@ build OS 1.26 / NOSP, assembled in a file named `nosp`:
     *Quit
 
 The current ROM image has an MD5SUM of
-`db1cc1118afc55e551e79cd6b80564cd`.
+`d30469b3db32d9a040afca78a7efe1a9`.
 
 Build requirements: disc images
 -------------------------------
@@ -180,16 +181,16 @@ Be sure to replace the terminating NUL at the end of the new table.
 
 ### Useful addresses
 
-Pointing a \*command at `CLIEND` (&E157) passes it to paged ROMs or the
+Pointing a \*command at `CLIEND` (&E15C) passes it to paged ROMs or the
 current filing system.  This is convenient for disposing of the
 abbreviated forms of a command; the most efficient auxiliary byte value
 is &FF.
 
 To bypass utility ROMs, an action address equal to `JMIFSC - &07`
-(&E160) sends the command straight to the filing system control vector,
+(&E165) sends the command straight to the filing system control vector,
 defined at &021E.
 
-`JMIUSR` (&F09B) sends a \*command to USERV, defined at &0200.  An
+`JMIUSR` (&F0AF) sends a \*command to USERV, defined at &0200.  An
 auxiliary byte value of &01 emulates `*LINE`; other values (between &02
 and &DF inclusive) cause entry into the USERV routine with non-standard
 reason codes.
@@ -282,7 +283,7 @@ Known problems
   (it too can be [reassembled][15] to work with this OS).
 - Slogger's Tape to Challenger 3 ROM (T2C3) 1.00 jumps to the hard-coded
   address of the OSBYTE handler in OS 1.20, causing a crash on the next
-  call to OSBYTE. (Patch &8F15 = `JMP &E88B`.)
+  call to OSBYTE. (Patch &8F15 = `JMP &E89F`.)
 - Many software titles, especially games, decrypt themselves using the
   OS ROM contents as a key.  These titles are incompatible with OS
   1.26 / NOSP.
