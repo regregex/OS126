@@ -244,7 +244,7 @@ COMTAB  ;table of MOS commands
 
  = ZERO ;end of table
 
- % 370 ;padding
+ % 375 ;padding
 
 GOIO
  SEC
@@ -308,7 +308,7 @@ ABACUS
  |
  = ZERO ;end of table
 
- % 548 ;padding
+ % 553 ;padding
  ]
 
 CLINT
@@ -496,14 +496,6 @@ JMICMD
 JMIFSC
 
  JMI FSCVEC
-;
-;
-OPT
- ASLA ;lsb(A) := 0
-;* LDAIM $00
-EOF
- ANDIM &01 ;$00 => OPT,  $01 => EOF
- BPL JMIFSC ;[ALWAYS JUMP, present option to file system AND return]
 
 
 ; ignore space characters
@@ -767,6 +759,77 @@ PRINT0
  RTS
 
 
+FLUSHC  ;flush buffer
+ BNE JFLUSH ;[flush currently selected input buffer]
+; X=0  => flush all buffers
+FLSHAL  ;flush all buffers
+ LDXIM BUPB
+FLUSH3
+; allow interrupts
+ CLI
+ SEI
+ JSR FLUSHS ;flush buffer given by X
+ DEX
+ BPL FLUSH3
+;
+; N.B. X<0, so is an invalid bufferid (and will be ignored by FLUSHS)
+;
+FLUSHS  ;flush specific buffer
+ CPXIM BUPB +&01
+ BCC FLUSH2 ;[valid bufferid]
+; invalid bufferid
+ RTS
+
+JFLUSH  ;flush input buffer and clear soft key expansion
+ LDX RDCHSW ;X := input bufferid
+FLUSH2
+STROB4  ;not user print
+STCRS  ;RS423 managed by cassette
+; ignore print request by purging buffer AND return
+PURGE
+; purge buffer given by index in X
+; this routine does not corrupt A or X
+ CLC
+;
+PURGEX  ;entered by OSWORD sound routine with C=1
+ PHA ;save A
+ PHP ;save interrupt state
+ SEI
+;
+; kill sound channel if sound buffer
+ BCS PURNSB ;[OSWORD call so do not kill sound]
+ LDAAX BUFTYP
+ BPL PURNSB ;[not a sound buffer]
+; kill sound on channel X
+ JSR SCRST
+PURNSB
+;
+; check for input buffer
+ CPXIM OUTPUT
+ BCS VAULT ;[output buffer]
+;
+; input buffer, kill soft key expansion and VDU queueing
+;
+ LDAIM ZERO
+ STA SOFKL ;kill soft key expansion
+ STA QPOSN ;kill VDU queueing
+;
+;if input buffer OR first output buffer i.e. RS423
+;then Z=1; buffer flag unused, preserve
+VAULT BEQ PURGE3
+;otherwise C=1
+; flag buffer dormant
+ RORAX BACTIV
+;CNPV routine ignores C when V=1
+;
+PURGE3
+;
+ JSR JMIPUR ;use indirection with V=1 (defaults to CNP)
+;
+ PLP ;restore interrupt state
+ PLA ;restore A
+ RTS
+
 STROBE  ;send character to selected printer
 ; ****************************************
 ; MUST BE ENTERED WITH INTERRUPTS DISABLED
@@ -884,52 +947,6 @@ UPTX  ;entered by *FX5
  JMI UPTVEC ;call user print routine AND return
 
 
-STROB4  ;not user print
-STCRS  ;RS423 managed by cassette
-; ignore print request by purging buffer AND return
-PURGE
-; purge buffer given by index in X
-; this routine does not corrupt A or X
- CLC
-;
-PURGEX  ;entered by OSWORD sound routine with C=1
- PHA ;save A
- PHP ;save interrupt state
- SEI
-;
-; kill sound channel if sound buffer
- BCS PURNSB ;[OSWORD call so do not kill sound]
- LDAAX BUFTYP
- BPL PURNSB ;[not a sound buffer]
-; kill sound on channel X
- JSR SCRST
-PURNSB
-;
-; check for input buffer
- CPXIM OUTPUT
- BCS VAULT ;[output buffer]
-;
-; input buffer, kill soft key expansion and VDU queueing
-;
- LDAIM ZERO
- STA SOFKL ;kill soft key expansion
- STA QPOSN ;kill VDU queueing
-;
-;if input buffer OR first output buffer i.e. RS423
-;then Z=1; buffer flag unused, preserve
-VAULT BEQ PURGE3
-;otherwise C=1
-; flag buffer dormant
- RORAX BACTIV
-;CNPV routine ignores C when V=1
-;
-PURGE3
-;
- JSR JMIPUR ;use indirection with V=1 (defaults to CNP)
-;
- PLP ;restore interrupt state
- PLA ;restore A
- RTS
 ;
 ;
 CNP  ;count buffer entries / purge buffer

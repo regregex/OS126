@@ -530,10 +530,12 @@ RMLA  ;read machine low memory address
  = MCOPY ;copy character at cursor (fB)
 
 ; 'hide' 6 bytes
-JFLUSH  ;flush input buffer and clear soft key expansion
- LDX RDCHSW ;X := input bufferid
-FLUSH2
- JMP PURGE ;purge buffer AND return
+OPT
+ ASLA ;lsb(A) := 0
+;* LDAIM $00
+EOF
+ ANDIM &01 ;$00 => OPT,  $01 => EOF
+ JMI FSCVEC ;[ALWAYS JUMP, present option to file system AND return]
 
 ;       ROW     7
  = ESC ;same shifted
@@ -549,28 +551,6 @@ FLUSH2
 ENDKT
 
 
-
-
-FLUSHC  ;flush buffer
- BNE JFLUSH ;[flush currently selected input buffer]
-; X=0  => flush all buffers
-FLSHAL  ;flush all buffers
- LDXIM BUPB
-FLUSH3
-; allow interrupts
- CLI
- SEI
- JSR FLUSHS ;flush buffer given by X
- DEX
- BPL FLUSH3
-;
-; N.B. X<0, so is an invalid bufferid (and will be ignored by FLUSHS)
-;
-FLUSHS  ;flush specific buffer
- CPXIM BUPB +&01
- BCC FLUSH2 ;[valid bufferid]
-; invalid bufferid
- RTS
 
 
 HELP  ;*HELP command
