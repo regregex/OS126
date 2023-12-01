@@ -166,9 +166,8 @@ RDBLKA INY
 ;Have here finished reading data, so
 ;read two more bytes of CRC without storing
 
- LDAIM &01 ;Set counter
- STA TEMP
- LDYIM &05
+ LDYIM &05 ;NB bit 1 <> bit 0
+ STY TEMP ;Set counter
  BNE NEWINT
 
 
@@ -178,8 +177,8 @@ SUMIN
 
  TYA
  JSR ADDCRC
- DEC TEMP
- BPL IEX ;One more to go
+ LSR TEMP ;NB alters returned C
+ BCS IEX ;One more to go
 
 ;If here, finished, so mark BG job finished
 
@@ -427,7 +426,7 @@ GETHLP JSR ESCAPE
  CMP ITYPE
  BNE GETHLP
 
-RDHDLA LDYIM &00
+RDHDLA
  JSR SETJB1 ;Set cheksum etc.
 
 RDHDL1 JSR CASIN ;Read and add to checksum
@@ -655,7 +654,6 @@ WRBKL2 LDAAX INFO ;Rest of header to tape
  ORA INFO +BKSZEH
  BEQ WRBKEM ;Empty block
 
- LDYIM &00
  JSR SETJB1
 WRBKL3
  [ TUBESW=0
