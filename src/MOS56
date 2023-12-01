@@ -535,7 +535,7 @@ OPT
 ;* LDAIM $00
 EOF
  ANDIM &01 ;$00 => OPT,  $01 => EOF
- JMI FSCVEC ;[ALWAYS JUMP, present option to file system AND return]
+ JMP JMIFSC ;[ALWAYS JUMP, present option to file system AND return]
 
 ;       ROW     7
  = ESC ;same shifted

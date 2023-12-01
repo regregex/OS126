@@ -242,9 +242,10 @@ COMTAB  ;table of MOS commands
 
  = /LANG ;assumed -ve; stored as default jump address
 
- = ZERO ;end of table
+ = ""
+ = &80 ;end of table
 
- % 375 ;padding
+ % 378 ;padding
 
 GOIO
  SEC
@@ -306,9 +307,10 @@ ABACUS
  BNE FRIEZE ;then raise "Bad command"
  JMP SVOP3 ;[service claimed, do not offer to other ROMs]
  |
- = ZERO ;end of table
+ = ""
+ = &80 ;end of table
 
- % 553 ;padding
+ % 556 ;padding
  ]
 
 CLINT
@@ -395,38 +397,28 @@ CLIRST ; restart search at next keyword
 CLIADV ; compare characters
  INY ; advance user word pointer
  LDAIY WORK ; fetch user character
- JSR CAPS ; set C=1 iff alpha [not iff caps]
- ANDIM &5F ; equate cases and also clear bit 7
+ ANDIM &DF ;equate cases
+ CMPIM "Z"+&01
+ ANDIM &5F ;clear bit 7
+ BCC CLIALF ;if above "Z"
+ LSRA ;then ensure A<&30, C=0
+CLIALF CMPIM "A" ;C=1, "A"<=A<="Z" iff alpha
  INX ; advance table pointer or skip aux byte
  EORAX COMTAB ; set b7 from table and compare b6..0
- ;N Z C meaning                 action          may test/absorb "."
- ;0 0 0 mismatch                skip            y (won't match ".")
- ;0 0 1 end of user word/abbr.  skip/accept     y
- ;0 1 0 characters match        advance         n
- ;0 1 1 end of user word        skip            y (won't find ".")
- ;1 0 0 end of keyword          skip            n
- ;1 0 1 end of both words       accept          n
- BCS CLIFIN ; if C=1, test N
- ;x x 0
- BEQ CLIADV ; if Z=1 C=0 then characters match, advance
- ;x 0 0
-CLIFIN
- ;x 0 0 / x x 1
- BMI CLISKP ; if N=1 then skip or set up X and accept
- ;0 0 0 / 0 x 1
- LDAIY WORK ; restore user character
- INY ; advance pointer past dot
- EORIM ".":EOR:&FF ; if it was ".", now A=&FF
- CMPIM &FF ; C=0 if mismatch, skip; C=1 if abbreviation, accept
+ BEQ CLIADV ;keywords must be all capital letters
+ BCS CLISKP ;C=1, mismatch or end of keyword, reject
+ BMI CLISKP ;C=0, end of both words, accept
+ LDAIY WORK ;else end of user word, test for abbreviation
+ INY ;move past the dot
+ EORIM "."
+ CMPIM &01 ;C=1 iff not dot, reject
 CLISKP
- ;0 0 0 / 0 x 1 / 1 0 x
  INX ; skip high byte of action address
 CLIALI ; align to keyword terminator
  INX ; advance table pointer or skip low byte of action address
  LDAAX COMTAB -&02 ; test table byte at original offset
- BEQ CLIEND ;[no more CLI command names]
  BPL CLIALI ;[not reached address hi-byte]
- BCC CLIRST ;if C=0, compare with next keyword
+ BCS CLITMN ;if C=1, compare with next keyword
 ;CLIMFN  ;full name match
 ; found CLI command match
 ; construct JMI hi-byte value to command processing code
@@ -468,6 +460,12 @@ BASIC  ;select BASIC language ROM
  LDX BROMID
  BMI NBASIC ;[no BASIC ROM]
  JMP ILR2 ;enter BASIC ROM (N.B. A b0=1, enter with C=1)
+
+CLITMN
+ ASLA
+ BNE CLIRST
+ ;else fall through to CLIEND
+
 
 ;END OF MOS 1.25
 NBASIC  ;BASIC ROM not present so offer to service ROMs

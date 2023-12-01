@@ -1,19 +1,8 @@
 ; FILE -> MOS72
 
-START
 
  TTL C.F.S. Main Routines - INIT
  OPT MOS72
-
-
-CROM  ;A=$8D, V=0
-TAPE  ;A=$8C, V=0
- EORIM &8C
-TAPE12  ;used by RESET, A=X=$00
- ASLA
- STA SROMSW ;A=0 => *TAPE,  A=2 => *ROM
- CPXIM &03 ;test for *TAPE3
- JMP SOFTPT ;[ALWAYS jump]
 
 
 INIT
@@ -32,13 +21,23 @@ INIT
  STA OPTS ;User status = retry & msgs on
  LDAIM DEFGAP
  STA SEQGAP
- PLP
+ BNE SOFTPT
+
+
+CROM  ;A=$8D, V=0
+TAPE  ;A=$8C, V=0
+ EORIM &8C
+TAPE12  ;used by RESET, A=X=$00
+ ASLA
+ STA SROMSW ;A=0 => *TAPE,  A=2 => *ROM
+ CPXIM &03 ;test for *TAPE3
+ PHP
+
 
 ;Note CFSTAT (CFS0) set to zero by MOS free of charge
 ;on hard reset
 
 SOFTPT  ;Soft entry point (*TAPE)
- PHP
  LDAIM FSDIE
  JSR JMIFSC ;present command to file system
  LDXIM &06
@@ -117,12 +116,10 @@ ARGGO
  BNE INTRTS ;No action on non-zero entry condition
  CPYIM &00
  BNE INTRTS ;If handle not zero -> don't do
- LDA SPEED
- ANDIM &FB ;Subtract 4
- ORA SROMSW
- ASLA
- ORA SROMSW
- LSRA ;Uses the fact that SROMSW is either 0 or 2
+ LDAIM &03
+ BIT SROMSW
+ BNE INTRTS
+ AND SPEED
 INTRTS RTS
 
 
