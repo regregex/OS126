@@ -4,6 +4,21 @@
  TTL C.F.S Main Routines - OPT
  OPT &01
 
+HELP  ;*HELP command
+ LDXIM SVHELP
+ JSR SVOP ;Y = offset within line of arguments
+;
+; Y preserved, therefore Y>=2 on return
+;
+;STROUT uses FTPTR, clobbered during OSASCI->OSBPUT
+ LDAIM MCR ;start by printing CR
+ TAY ;initialise offset
+HELOP JSR OSASCI
+ INY
+ LDAAY PVER +&01 -MCR
+ BNE HELOP
+ BEQ HELOO
+
 RECORD
 
  LDA SROMSW
@@ -21,7 +36,7 @@ GETCR1 JSR ESCAPE
  JSR OSRDCH
  CMPIM MCR
  BNE GETCR1
- JMP OSNEWL
+HELOO JMP OSNEWL
 
 
 OPTERR JMP MBDCMD

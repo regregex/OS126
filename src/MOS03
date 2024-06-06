@@ -198,7 +198,7 @@ PRPAL
  TAX
  INY ;(Y):=1
  LDAIY WARGS ;Load physical colour
- BCC DCC1 ;C=0 from WORD->BYTE2
+ BCS DCC1 ;C=1 from OSB
 
 ;SYN ($16) Change mode
 

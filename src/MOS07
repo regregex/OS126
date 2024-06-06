@@ -65,20 +65,18 @@ LINEC STA ZTEMPC+&01 ;Offset of LSTART (=PStart of old)
  ORA ZTEMPC ;Get Hend (horizontal co-ordinate of endpoint)
  TAX
  JSR COPY2H
- LDA PLMODE ;Initialise dotted line test
- ANDIM &10 ;Isolate b4
- ASLA
- ASLA
- ASLA ;now $80 if plot dotted line, $00 if full line
- STA ZTEMP+&01
  LDXIM LSTART-V ;Window start point LSTART
  JSR WIND
  STA ZTEMPB
+ CMPIM &01 ;C=1 iff start point not inside
+ LDA PLMODE ;Initialise dotted line test
+ ANDIM &10 ;Isolate b4
  BEQ LINED
- LDAIM &40 ;Start point not inside, so slow plot
- ORA ZTEMP+&01
- STA ZTEMP+&01
-LINED LDX ZTEMPB+&01 ;Window other point
+ LDAIM &80 ;now $80 if plot dotted line, $00 if full line
+LINED BCC LINEL
+ ORAIM &40 ;Start point not inside, so slow plot
+LINEL STA ZTEMP+&01
+ LDX ZTEMPB+&01 ;Window other point
  JSR WIND
  BIT ZTEMPB ;Anything to do ?
  BNE LINEX1 ;No, then exit
@@ -121,7 +119,8 @@ LINEH LDAAX D2JTBL ;Initialise D2 jump vector
  TAX ;Ensure +ve
  BPL LINEH1
  JSR NEGAY
-LINEH1 TAX ;MSB of no. V points
+ TAX ;MSB of no. V points
+LINEH1
  INY ;Increment this no.
  BNE LINEH2
  INX

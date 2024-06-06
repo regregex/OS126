@@ -138,7 +138,7 @@ COMTAB  ;table of MOS commands
 
 ; RUN
 ;must come before ROM to trap *R.
-;should be as fast as *wordless to avoid disadvantage
+;should be as fast as *wordless to have the same advantage
  = "RUN"
  [ STARGO = &00
  & /JMICMD 
@@ -245,7 +245,7 @@ COMTAB  ;table of MOS commands
  = ""
  = &80 ;end of table
 
- % 61 ;padding
+ % 64 ;padding
 
 GOIO
  SEC
@@ -310,7 +310,7 @@ ABACUS
  = ""
  = &80 ;end of table
 
- % 239 ;padding
+ % 242 ;padding
  ]
 
 CLINT
@@ -399,9 +399,8 @@ CLIADV ; compare characters
  LDAIY WORK ; fetch user character
  ANDIM &DF ;equate cases
  CMPIM "Z"+&01
- ANDIM &5F ;clear bit 7
  BCC CLIALF ;if above "Z"
- LSRA ;then ensure A<&30, C=0
+ LDAIM &00 ;then ensure A<&30, C=0
 CLIALF CMPIM "A" ;C=1, "A"<=A<="Z" iff alpha
  INX ; advance table pointer or skip aux byte
  EORAX COMTAB ; set b7 from table and compare b6..0
