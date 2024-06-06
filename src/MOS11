@@ -30,8 +30,9 @@ READCH
  CLC ;transform only
  JSR TTXFRM ;convert ASCII to Teletext
  JSR TTXFRM ;and again to convert Teletext to ASCII
-READKE LDY MODE ;Only way of getting the mode
  TAX
+READKE LDY MODE ;Only way of getting the mode
+ TXA
  RTS
 
 
@@ -48,7 +49,6 @@ READKB LDAAY READWS ;Get bit pattern
  BNE READKC ;Different?, then not this character
  DEY  ;Same?, then look at next row down
  BPL READKB
- TXA
  CPXIM &7F ;Is it a DEL?
  BNE READKE ;No?, then you have found it
 READKC INX  ;Next character up
@@ -72,29 +72,32 @@ READKC INX  ;Next character up
 ;ZTEMPB is the mask being used to isolate the current pixel
 
 PTCNV LDYIM &07 ;The row to be converted
-PTCNVA STY ZTEMP ;Start of 'convert 1 row' loop
+ ;Adds 4 bytes but OS 1.25 gets them anyway
+ ;to remain parallel with 1.26 until GADDR
+PTCNVA ;Start of 'convert 1 row' loop
  LDAIM &01 ;The bit pattern to be formed
  STA ZTEMP +&01 ;Finshed when a carry shifted out
- ;Adds 4 bytes but OS 1.25 gets them anyway
- ;to avoid diverging from 1.26 before GADDR
  CMP MASKR ;C=0 if >1bpp
-PTCNVB LDA MASKL ;Isolates the pixel to be tested in the current byte
- STA ZTEMPB ;Must move to next byte when carry shifted out left
+PTCNVB
  LDAIY ZMEMT ;Get the byte to be tested
  EOR BTCOLF ;Isolate back from foreground
  BCS PTCNVF ;Write byte directly if 1bpp
+ STA ZTEMPB
+ LDA MASKL ;Isolates the pixel to be tested in the current byte
 PTCNVC BIT ZTEMPB ;Are any of the bits in this pixel set ?
  BEQ PTCNVD ;No?, then this pixel was background
  SEC  ;Yes?, then it was foreground
 PTCNVD ROL ZTEMP +&01 ;Shift this bit into the bit pattern
- ROR ZTEMPB ;Isolate the next pixel
+ RORA ;Isolate the next pixel
  BCC PTCNVC ;carry clear, then continue
  BMI PTCNVE ;pattern overflow?, then this pattern is complete
  TYA  ;c=1, then examine the next byte in the row
  ADCIM &07 ;(c=1), by adding 8 to Y
  TAY
  BCC PTCNVB ;and continue (branch always taken)
-PTCNVE LDY ZTEMP ;Restore Y
+PTCNVE TYA ;Restore Y
+ ANDIM &07
+ TAY
  LDA ZTEMP +&01 ;bit pattern finished, store it in the READWS
 PTCNVF
  STAAY READWS

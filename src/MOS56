@@ -553,25 +553,6 @@ ENDKT
 
 
 
-HELP  ;*HELP command
- LDXIM SVHELP
- JSR SVOP ;Y = offset within line of arguments
-;
-; Y preserved, therefore Y>=2 on return
-;
- JSR STROUT ;needs Y<>0 to print
- = MCR
- = "OS "
- = VERA
- = "."
- = VERB
- = VERC
- = MCR
- = ZERO
-;
- RTS
-
-
 ISCAN  ;scan keys from matrix address $10
  CLC ;ignore key addressed by Y
 ;
