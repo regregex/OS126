@@ -21,6 +21,7 @@ OS 1.26 / NOSP has the following modifications:
 - An error raised while printing the language banner [aborts the change
   of language, and is handled by the current language][2] (thanks to
   J.G.Harston)
+- `*HELP` is stable while `*SPOOL` is active
 - OSCLI dispatches \*commands faster, especially to USERV
 - The paged ROM indirection routine places one byte less on the stack
 - OSBYTE calls to write to I/O memory avoid causing a dummy read cycle
@@ -38,11 +39,11 @@ OS 1.26 / NOSP has the following modifications:
   by J.G.Harston)
 - RFS file searching and `*CAT` terminate when an RFS ROM is present
   in slot 0 (thanks to J.G.Harston)
-- 555 bytes cleared in the main section + 1 existing = 556 bytes free
+- 558 bytes cleared in the main section + 1 existing = 559 bytes free
 - 21 bytes cleared in the top page
 
 The free space is placed at the end of the \*command table, currently
-located at address &DEAE.
+located at address &DEAC.
 
 Speech Driver
 -------------
@@ -57,7 +58,7 @@ Installation notes and source code are found in `spdrv.txt`.
 OS 1.26
 -------
 
-The [main branch][6] retains speech processor support and makes 260
+The [main branch][6] retains speech processor support and makes 263
 bytes of the ROM available in total.
 
 STARGO / NOSP
@@ -76,7 +77,7 @@ option in `src/MOSHdr` enables:
   to paged ROMs only, or to the paged ROM slot number given in hex
 - `*:::` \[&lt;*command*&gt;\] sends a command to the filing system only
 - `*FX 5,n` flashes the keyboard LEDs while waiting for the printer
-- 378 + 1 bytes free
+- 381 + 1 bytes free
 
 The rest of this document describes vanilla OS 1.26 / NOSP.
 
@@ -110,7 +111,7 @@ build OS 1.26 / NOSP, assembled in a file named `nosp`:
     *Quit
 
 The current ROM image has an MD5SUM of
-`5151d4abfbeb0ed63f14021e9f0071f5`.
+`faf3d737c891699765138b2a43cd496a`.
 
 Build requirements: disc images
 -------------------------------
@@ -134,7 +135,7 @@ Patching the \*command table
 The space now available makes it practical to add *star commands* to the
 built-in OS command set.  New entries can be appended in place of the
 terminator sequence at `src/MOS38` line 310, currently located at
-address &DEAD.
+address &DEAB.
 
 Command table entries have the following form:
 
@@ -218,7 +219,7 @@ reach the NFS ROM.
 After making changes
 --------------------
 
-Adjust the amount of padding at line 311 of `src/MOS38` to ensure that
+Adjust the amount of padding at line 313 of `src/MOS38` to ensure that
 `src/MOS76` assembles code up to &FBFF exactly.  The assembler will warn
 of code overrunning into the FRED area - but not of falling short.
 

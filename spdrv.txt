@@ -1,5 +1,5 @@
 *| spdrv.txt
-*| Greg Cook, 15 September 2023
+*| Greg Cook, 3 April 2024
 *|
 *| This assembles a small paged ROM for the BBC Micro computer which
 *| adds speech processor support to the NOSP, MOSnosp and JGHMOS1
@@ -26,18 +26,18 @@
 *|   This program assembles a relocatable Sideways ROM module in the
 *|   format developed by J.G.Harston.  The module can be installed in a
 *|   sideways ROM or RAM slot at address &8000 like any paged ROM; or it
-*|   can be combined with other modules to share a slot.
+*|   can be combined with other modules or a short ROM to share a slot.
 *|   For more information see:
-*|     http://mdfs.net/Software/BBC/Modules/
+*|     https://mdfs.net/Software/BBC/Modules/
 *|   NB: It is recommended to install this module as the highest-
 *|   priority module in the highest available paged ROM slot (e.g. slot
 *|   15,) to help ensure (a) fast interrupt handling, (b) presenting RFS
 *|   files in PHROMs before those in paged ROMs; (c) detection of RFS
 *|   selecting the next ROM down, which requires this module to be
-*|   installed in a slot higher than 0.
+*|   installed in a slot higher than slot 0.
 *|   If this module is relocated within the slot then the "glue logic"
-*|   inserted by SMJoin may be modified to service it before earlier
-*|   modules, which may include an RFS file set.
+*|   inserted by SMJoin may be modified to service it before the
+*|   preceding modules, which may include an RFS file set.
 *|   This module uses the private byte assigned to its paged ROM slot
 *|   (at &0DF0+X) to store the current RFS PHROM number.
 
@@ -45,7 +45,7 @@
 NEW
 AUTO
 REM >A.SPDRV
-REM Greg Cook 15 Sep 2023 12:10
+REM Greg Cook 03 Apr 2024 13:50
 ON ERROR Z%=0:CLOSE#0:REPORT:PRINT" at line ";ERL:END
 IF Z%=&FBC3FAF9 Z%=0:meta%=1 ELSE meta%=0
 :
@@ -66,10 +66,10 @@ O%=code%:IF meta% P%=&8000 ELSE P%=&8100
 .romsft:JMP serve
 .romtyp:EQUB &82
 .copyrp:EQUB copyr-lang
-.romver:EQUB &06
+.romver:EQUB &07
 .rommsg:EQUS "Speech Driver "
-.vers:EQUB &00:EQUS "0.31 (15 Sep 2023)"
-.copyr:EQUB &00:EQUS "(C)2023 Greg Cook":
+.vers:EQUB &00:EQUS "1.00 (03 Apr 2024)"
+.copyr:EQUB &00:EQUS "(C)2024 Greg Cook":
 .eottl:EQUB &00
 :
 .serve:CMP #&05:BNE not05
@@ -193,8 +193,9 @@ JSR rspech:BMI nspech
 JSR remov:STA romptr+&01:JSR remov:STA romptr+&00
 LDY serom:BEQ isp2:BPL isp3
 TYA:LDX romid:STA ppgtab,X
-BIT serom:BVS rab:JSR spload:BVC ispx
-.rab:ASL romptr+&00:ROL romptr+&01:JSR splind
+BIT serom:BVC laddr
+ASL romptr+&00:ROL romptr+&01:JSR splind:BEQ ispx
+.laddr:JSR spload
 .ispx:LDY shutsp:JSR wspech:PLP:RTS
 .isp3:JSR wspech
 .isp2:LDY romptr+&00:JSR wspech
@@ -204,9 +205,8 @@ LSR spwk2:BNE sperep
 :
 .indrfs:LDA #&3E:STA romptr+&00 \romptr+&01 = &00
 .splind:JSR spload
-JSR read:STY romptr+&01:JSR read:TYA:LDX #&08
-.reflec:RORA:ROL romptr+&01:DEX:BNE reflec
-RORA:STA romptr+&00
+JSR read:STY romptr+&01:JSR read:TYA:LDX #&08:RORA
+.reflec:ROL romptr+&01:RORA:DEX:BNE reflec:STA romptr+&00
 .spload
 PHP:SEI
 LDA romptr+&00:JSR spl
@@ -246,6 +246,7 @@ LDA sendf,Y:STA pbq:PLA
 .reloc
 ]
 NEXT
+IF O%?-1=0 OR O%?-1=&FF PRINT "Missing anti-merging byte":END
 sr%=0:next%=1
 IF meta% fh%=OPENIN"SPDRV"
 FOR pass%=0 TO reloc-lang-1
@@ -256,6 +257,7 @@ IF (new%AND&C0)=&80 sr%=sr% OR new%<>old% AND next%:next%=next%+next%
 IF next% AND &FF ELSE ?O%=sr%:O%=O%+1:sr%=0:next%=1
 NEXT
 IF next%<>1 ?O%=sr%:O%=O%+1
+?O%=&3C:O%=O%+1
 IF meta% CLOSE#fh%
 OSCLI "SAVE SPDRV "+STR$~code%+" "+STR$~O%+" FFFF8000 FFFF8000"
 IF meta% END ELSE Z%=&FBC3FAF9:RUN
