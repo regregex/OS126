@@ -21,6 +21,7 @@ OS 1.26 has the following modifications:
 - An error raised while printing the language banner [aborts the change
   of language, and is handled by the current language][2] (thanks to
   J.G.Harston)
+- `*HELP` is stable while `*SPOOL` is active
 - OSCLI dispatches \*commands faster, especially to USERV
 - The paged ROM indirection routine places one byte less on the stack
 - OSBYTE calls to write to I/O memory avoid causing a dummy read cycle
@@ -36,17 +37,17 @@ OS 1.26 has the following modifications:
   in slot 0 (thanks to J.G.Harston)
 - Character recognition is faster in two-colour display `MODE`s
 - Semantically transparent optimisations
-- 238 bytes cleared in the main section + 1 existing = 239 bytes free
+- 241 bytes cleared in the main section + 1 existing = 242 bytes free
 - 21 bytes cleared in the top page
 
 The free space is placed at the end of the \*command table, currently
-located at address &DF2D.
+located at address &DF2B.
 
 OS 1.26 / NOSP
 --------------
 
 In addition to the above, the [NOSP branch][4] strips speech processor
-support and makes 577 bytes of the ROM available in total.  
+support and makes 580 bytes of the ROM available in total.  
 An optional paged ROM module, `SPDRV`, restores speech system
 functions.
 
@@ -66,7 +67,7 @@ option in `src/MOSHdr` enables:
   to paged ROMs only, or to the paged ROM slot number given in hex
 - `*:::` \[&lt;*command*&gt;\] sends a command to the filing system only
 - `*FX 5,n` flashes the keyboard LEDs while waiting for the printer
-- 61 + 1 bytes free
+- 64 + 1 bytes free
 
 The rest of this document describes vanilla OS 1.26.
 
@@ -100,7 +101,7 @@ build OS 1.26:
     *Quit
 
 The current ROM image has an MD5SUM of
-`64d417bfa3a5c2fc6c0436a783ff0603`.
+`7e4064fe8f4f6d199ca567004858463d`.
 
 Build requirements: disc images
 -------------------------------
@@ -124,7 +125,7 @@ Patching the \*command table
 The space now available makes it practical to add *star commands* to the
 built-in OS command set.  New entries can be appended in place of the
 terminator sequence at `src/MOS38` line 310, currently located at
-address &DF2C.
+address &DF2A.
 
 Command table entries have the following form:
 
@@ -207,7 +208,7 @@ reach the NFS ROM.
 After making changes
 --------------------
 
-Adjust the amount of padding at line 311 of `src/MOS38` to ensure that
+Adjust the amount of padding at line 313 of `src/MOS38` to ensure that
 `src/MOS76` assembles code up to &FBFF exactly.  The assembler will warn
 of code overrunning into the FRED area - but not of falling short.
 
@@ -228,7 +229,7 @@ reverting portions of source code to the original.  They are:
 Applying all but the last two changes yields 41 bytes total and results
 in [OS 1.25][9], available separately.  The source code in this archive
 is manifolded and builds OS 1.20, 1.25, 1.26, STARGO and [NOSP][4]
-according to the choice of header file: NOSP eliminates a further 316
+according to the choice of header file: NOSP eliminates a further 312
 bytes of speech processor driver code, based on J.G.Harston's
 [patch][10].  A conditional assembly reference to `MOS125` or `NOSP`
 introduces each variation from the standard code.  
