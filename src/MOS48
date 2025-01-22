@@ -147,21 +147,6 @@ MSGONY  ;used by MSGON below
  LDAIM ZERO
  RTS
 
-JMI JMI JMILO ;jump to specific OSBYTE routine, C=1
-PVER * JMI + &02 ;JMILO in zp, use high byte as BRK
- = FX0MSG
- = "OS "
- = VERA
- = "."
- = VERB
- = VERC ;BRK forms terminator
-
-BADSTR
- BRK ;report error 'Bad string'
- = BADST
- = "Bad string"
- = ZERO ;end of message
-
 GSINTC  ;intialise for string access (read item)
 
  CLC
@@ -191,8 +176,19 @@ GSRA  ;used by |! option, entered with A=$80
 ; CR found,  C=1
 ; check that string did not open with double quote
  BIT KQUOTE
- BMI BADSTR ;[opening double quote without closing double quote]
- BPL GSR1 ;[ALWAYS jump, return C=1 and EQ=>CR]
+ BPL GSR1 ;[no unpaired double quote, return C=1 and EQ=>CR]
+BADSTR
+ BRK ;report error 'Bad string'
+ = BADST
+ = "Bad string" ;BRK forms terminator
+PVER BRK
+ = FX0MSG
+ = "OS "
+ = VERA
+ = "."
+ = VERB
+ = VERC
+ = ZERO
 KEYNCR  ;character not CR
  CMPIM SPACE
  BCC BADSTR ;[control character in string]

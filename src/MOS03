@@ -229,7 +229,7 @@ ETB LDA QEND-&08 ;Is it the soft font ?
  STY ZTEMPC +&00
 ETBC LDAIY ZTEMPB ;copy from hard font
  STAIY ZTEMPC ;to soft font
- DEY
+ INY
  BNE ETBC
  STX ZTEMPC +&00 ;restore character offset
 ETBB

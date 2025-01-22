@@ -138,7 +138,7 @@ COMTAB  ;table of MOS commands
 
 ; RUN
 ;must come before ROM to trap *R.
-;should be as fast as *wordless to have the same advantage
+;should be as fast as *wordless to have equal advantage
  = "RUN"
  [ STARGO = &00
  & /JMICMD 
@@ -245,7 +245,7 @@ COMTAB  ;table of MOS commands
  = ""
  = &80 ;end of table
 
- % 381 ;padding
+ % 384 ;padding
 
 GOIO
  SEC
@@ -310,7 +310,7 @@ ABACUS
  = ""
  = &80 ;end of table
 
- % 559 ;padding
+ % 562 ;padding
  ]
 
 CLINT
@@ -817,7 +817,7 @@ VAULT BEQ PURGE3
 ;otherwise C=1
 ; flag buffer dormant
  RORAX BACTIV
-;CNPV routine ignores C when V=1
+ SEC ;pass C=1; N=1, V=1, Z=* from BIT FFBYT
 ;
 PURGE3
 ;
