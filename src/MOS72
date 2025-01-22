@@ -356,6 +356,9 @@ PROTER JSR CASMOF ;Turn motor off
 LOADLC
  LDAIM &03
  STA CRIT ;Loading/running & prot., so disable ESCAPE and trap BREAK
+ BNE LOADLA ;always branch
+
+LODRTR JSR SEARCH ;Search for current block (BLOKNO)
 LOADLA
  LDAIM NIGBIT
  AND USFLGS
@@ -416,8 +419,6 @@ FINOPX RTS
 
 
 
-LODRTR JSR SEARCH ;Search for current block (BLOKNO)
- BNE LOADLA ;Try and reload data
 
 
  TTL C.F.S. Main Routines - RUN
@@ -951,7 +952,7 @@ PUTBYT
 ;function coz RX interrupts are "disabled"
 ;by TXFLAG (see IRUPT)
 
- PHA
+ STA TEMP
  TXA
  PHA
  TYA
@@ -959,8 +960,7 @@ PUTBYT
  LDAIM OUTHND
  JSR CHKHND ;Check handle open
 
- TSX
- LDAAX &0103
+ LDA TEMP
  LDX OUTPTR
  STAAX OUTBFR
  INX
@@ -974,7 +974,7 @@ PBEXIT INC OUTPTR
 ;user can retry if block is interrupted
 ;by ESCAPE.
 
- JMP PLYXAR
+ JMP GBEXX ;restores A from TEMP
  ;and now IADDR is not used at all.
 
 

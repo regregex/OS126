@@ -296,14 +296,14 @@ TADDR LDX CSX ;Check window of CSX
  CPX TWLCOL ;Lower than LH margin ?
  BCC FAIL
  CPX TWRCOL ;Higher than RH edge ?
- BEQ TADDRX
- BCS FAIL
+ BCC TADDRX
+ BNE FAIL
 TADDRX LDX CSY ;Check CSY
  CPX TWTROW
  BCC FAIL
  CPX TWBROW
- BEQ TADDRY
- BCS FAIL
+ BCC TADDRY
+ BNE FAIL
 
 ;End of windowing, now calc. memory posn.
 ;As TADDR with no bounds checking

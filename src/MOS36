@@ -460,16 +460,8 @@ SPOK  ;speak external data
 ; check for read and branch request
 ;
  BIT SEROM
- BVS RAB ;[read and branch]
-;
-; speak(address)
-; load address into speech processor
-;
-; V=0
- JSR SPLOAD ;N.B. does PHP...PLP
- BVC ISPX ;[ALWAYS jump]
-;
-RAB  ;read and branch (speak indirect)
+ BVC LADDR ;[speak(address)]
+;read and branch (speak indirect)
 ;
 ; multiply offset by two
 ;
@@ -478,7 +470,16 @@ RAB  ;read and branch (speak indirect)
 ;
 ; reselect address
 ;
- JSR SPLIND ;load address indirect
+ JSR SPLIND ;load address indirect (returns C=0)
+ BCC ISPX ;always branch
+
+LADDR
+;
+; speak(address)
+; load address into speech processor
+;
+; V=0
+ JSR SPLOAD ;N.B. does PHP...PLP
 ;
 ISPX
  LDY SHUTSP ;command defaults to speech

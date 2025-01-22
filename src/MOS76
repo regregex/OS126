@@ -193,10 +193,9 @@ PRTERR PLA  ;Restore hi byte of pointer
 ;at front of message. Note MSGOUT does an INC
 ;before printing, so don't have to add 2.
 
+ CPYIM &FF
  INY  ;Inc lo byte past BRK instruction
- BNE PRTEON
- CLC
- ADCIM &01
+ ADCIM &00
 PRTEON PHA  ;Set stack for MSGOUT
  TYA
  PHA
@@ -519,15 +518,14 @@ CHKHND
  AND CFSTAT
  CPYIM OUTHND
  BNE CHKHN1
- DEY
  LSRA
+ DEY
 CHKHN1
- LSRA
- BCC HNDERR
  DEY
- TYA
- EOR SROMSW
- BEQ CHKHXX
+ CPY SROMSW
+ BNE HNDERR
+ LSRA
+ BCS CHKHXX
 
 
 HNDERR BRK

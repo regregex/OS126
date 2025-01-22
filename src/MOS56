@@ -459,7 +459,7 @@ POUNDM
 
 ; 'hide' 6 bytes
 JMITST JMI TSTSFT
-JMIEVT JMI EVTVEC ;user event
+JMI JMI JMILO ;jump to specific OSBYTE routine, C=1
 
 ;       ROW     3
  = "1" ;shift '!'
@@ -552,6 +552,7 @@ EOF
 ENDKT
 
 
+JMIEVT JMI EVTVEC ;user event
 
 
 ISCAN  ;scan keys from matrix address $10
