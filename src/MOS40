@@ -82,8 +82,23 @@ ROL4A  ;rotate bit into address
 ; C=1 which TSTHEX ignores
  JSR TSTHEX
  BCS LSA1
+CNTRS0
  SEC ;return C=1
 LSA0  ;Z=1 => CR terminator
+ RTS
+
+CNTRS  ;count bytes left in RS423 input buffer
+ SEC ;count empty slots left ...
+ LDXIM BRSI ;... in RS423 input buffer
+ JSR JMICNT
+; count in Y (hi) and X (lo)
+ TYA
+ BNE CNTRS0 ;[more than RSOVER bytes left]
+;
+ CPX RSHLVL
+;
+; C=0 => overflow
+; C=1 => no overflow
  RTS
 
 
@@ -94,7 +109,6 @@ SAVE  ;(A=$00) SAVE <filename> <fromhex> <tohex> [exechex] [loadhex]
  STY WORK +&01
  STX FBLOCK+FSTR+&0
  STY FBLOCK+FSTR+&1
- PHA
 ; clear load address
  LDXIM FLOAD
  JSR CLRFB
@@ -104,6 +118,7 @@ SAVE  ;(A=$00) SAVE <filename> <fromhex> <tohex> [exechex] [loadhex]
 ; set to read characters from WORK buffer
  INY  ;Y:=0
 ; skip filename
+ PHA
  JSR GSINTC
 LS2 JSR GSREAD
  BCC LS2 ;[string character]

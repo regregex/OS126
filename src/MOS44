@@ -718,20 +718,6 @@ JMICNP JMI CNPVEC ;use indirection (defaults to CNP)
 ; return count in X (lo) and Y (hi)
 
 
-CNTRS  ;count bytes left in RS423 input buffer
- SEC ;count empty slots left ...
- LDXIM BRSI ;... in RS423 input buffer
- JSR JMICNT
-; count in Y (hi) and X (lo)
- CPYIM &01
- BCS CNTRS0 ;[more than RSOVER bytes left]
-;
- CPX RSHLVL
-;
-CNTRS0
-; C=0 => overflow
-; C=1 => no overflow
- RTS
 
 
 RADCX  ;read ADC channel X

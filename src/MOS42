@@ -257,7 +257,9 @@ RDCHGX  ;check for cursor option 1
 RDCHGS  ;process character as real softkey
  TYA ;A := character
 ;
+ ANDIM &0F
  PHA
+ TYA
  LSRA
  LSRA
  LSRA
@@ -267,15 +269,13 @@ RDCHGS  ;process character as real softkey
  TAY
 ; character on stack
 ;
- LDAAY SOFTLO-&08
- CMPIM &01 ;test softkey range option
+ LDAIM &01
+ CMPAY SOFTLO-&08
  BEQ GKEY ;[expand softkey]
  PLA ;restore character
- BCC RDCHG1 ;[ignore key]
+ BCS RDCHG1 ;[ignore key]
 ; return byte code
-; C=1
- ANDIM &0F ;A := offset of soft key
- CLC
+; C=0
  ADCAY SOFTLO-&08
 
  CLC
@@ -402,7 +402,6 @@ RDCHG0
 
 GKEY  ;soft key detected AND soft keys enabled
  PLA ;restore softkey code
- ANDIM &0F ;convert to soft key number in range 0-15 (assumes SFTKY0=$x0))
  TAY ;Y := soft key number
  JSR SKSIZE ;A := length of soft key string given by Y
  STA SOFKL ;SOFKL := length of soft key string

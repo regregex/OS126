@@ -478,18 +478,18 @@ PTTXC
 ;FOUR colour mode
 
 PFOURA TAY
- DEY
+ DEY ;75
 PFOUR LDAIY ZTEMPC ;Get bit pattern
  PHA  ;Push for L.S.Nybble
  LSRA
  LSRA
  LSRA
- LSRA
+ LSRA ;16
  TAX
  LDAAX BPFTB ;Get expanded patten
  ORA ZORA ;of M.S.Nybble
  EOR ZEOR
- STAIY ZMEMT
+ STAIY ZMEMT ;34
  ; same size, reduce stack load
  PLA  ;Get L.S.Nybble
  ANDIM &0F
@@ -497,13 +497,14 @@ PFOUR LDAIY ZTEMPC ;Get bit pattern
  TYA
  EORIM &08 ;Access next char. cell
  TAY
- LDAAX BPFTB
+ LDAAX BPFTB ;52
  ORA ZORA
  EOR ZEOR
  STAIY ZMEMT
  TYA
  EORIM &08
- BNE PFOURA
+ BNE PFOURA ;71
+ ;41
 PSXTC RTS  ;Also used by PSXTN
 
 ;SIXTEEN colour mode

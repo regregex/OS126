@@ -157,37 +157,44 @@ DCC1 ANDIM NPCOL ;mask off confusing bits
  STAAX PARROT ;Write to list
  STX SEIWKA
  LDA NCOLOR
- CMPIM &03
- PHP ;Needed later
  LSRA
+ TAY
 DCCALA LSR SEIWKA  ;determine start position =Logi*16/(ncolor+1)*16
  RORA
  BCS DCCALA
  ORAAX PARROT ;Get physical colour
- LDYIM &F0 ;Initialise loop counter
+ EORIM &07 ;adjust value accounting for ULA bug
+ DEY ;Does NCOLOR=3?
 
-DCCALB TAX ;Byte to be given to VPROC1
- PLP ;Does NCOLOR=3?
+;Interrupts already disabled shown by use of SEIWKA
+ [ &FF = &00
  PHP
- BNE DCCALC ;No?, then skip
- ASLA ;b6,b5 to b7,b6; clear b0
- ADCIM &40 ;carry doesn't matter (thanks Woz)
- ASLA ;b6 EOR b5 to C
- TXA ;restore byte
- BCC DCCALC ;If b5 & b6 both set or clear, don't invert them
- EORIM &60
-DCCALC JSR MVPRC1 ;Save (X) & (Y)
- TYA ;Loop counter
- CLC
- ADC NCOLOR
- TAY
- TXA ;Restore (A)
- ADCIM &10 ;c=0
- INY
+ SEI
+ ]
+
+;Y=$FF   2 colours  8 writes
+;Y=$00   4 colours  4 writes
+;Y=$06  16 colours  1 write
+
  BMI DCCALB
+ BNE DCCALC
+ EORAX DCCTAB +&05
+DCCALD STA VPROC1
+ EORIM &10
+ INY
+DCCALC STA VPROC1
+ EORAY DCCTAB -&01
+ LDXAY DCCTAB -&01
+ BNE DCCALD
+ STA VPREGB
+ [ &FF = &00
  PLP
+ ]
  PLP
  RTS
+
+DCCALB LDYIM &02
+ BNE DCCALD ;always branch
 
 
 ;OSWORD call to programme palette

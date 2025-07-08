@@ -32,14 +32,14 @@ RDCH5
  SEC
  ROR ESSEMA ;enter critical region
  JSR OSBGET ;get a byte from exec file
- PHP
- LSR ESSEMA ;exit critical region
- PLP
- BCC RDCH3 ;[return character]
+ ROR ESSEMA ;exit critical region
+ CLC
+ BPL RDCH3 ;[return character]
 ;
 ; end of exec file: close exec file
 ; Y = handle
  LDAIM ZERO
+ STA ESSEMA ;exit critical region
  STA EXECH ;cancel exec file handle
  JSR OSFIND ;close exec file
 RDCHQ  ;read character
@@ -245,7 +245,7 @@ COMTAB  ;table of MOS commands
  = ""
  = &80 ;end of table
 
- % 67 ;padding
+ % 69 ;padding
 
 GOIO
  SEC
@@ -310,7 +310,7 @@ ABACUS
  = ""
  = &80 ;end of table
 
- % 245 ;padding
+ % 247 ;padding
  ]
 
 CLINT
@@ -524,15 +524,11 @@ GETNUM
 GNT
  CPXIM &1A ;if 26 or more
  BCS TSTNR ;then overflow
- TAX ;save last digit read
- LDA NUMBER
- ASLA ;times 2
- ASLA ;times 4
- ADC NUMBER ;times 5; C=0
- ASLA ;times 10; C=0
- STX NUMBER ;NUMBER := most recently read digit
-; N.B. C=0
- ADC NUMBER ;A := accumulated value
+ ASL NUMBER ;else double accumulated value
+ ADC NUMBER ;C=0; A := N +  2*X
+ ASL NUMBER ;quadruple accumulated value
+ ADC NUMBER ;C=0; A := N +  6*X
+ ADC NUMBER ;C=0; A := N + 10*X
  BCS TSTNR ;[overflow]
 GN0
  STA NUMBER ;NUMBER := accumulated number so far (must save for KEY)
@@ -540,6 +536,7 @@ GN0
  JSR TSTNUX ;read digit skipping current character
  BCS GNT ;process digit [non-digit serves as terminator]
  CMPIM MCR
+TSTNRG
  SEC
 ; return with:
 ; C=1 => valid number, Z=1/0 => delimiter is/is_not CR, number in X
@@ -550,12 +547,11 @@ TSTNUX
  INY ;skip current character
 TSTNUM
  LDAIY WORK ;get next character
- CMPIM &3A ;N.B. $3A = '9' + 1
- BCS TSTNR ;[bad digit, > '9']
- CMPIM "0"
- BCC TSTNR ;[bad digit, < '0']
- ANDIM &0F ;convert to number (do not corrupt V)
-; N.B. C=1
+ EORIM "0" ;convert digit to number, all other chars higher
+ CMPIM &0A ;if number in range 0..9
+ BCC TSTNRG ;then return C=1, A=valid number
+ EORIM "0" ;else restore other character
+ CLC ;return C=0, not a digit
  RTS
 
 TSTNRX
@@ -569,13 +565,11 @@ TSTHEX  ;test for, and convert, hex digit
  JSR TSTNUM
  BCS TSTH0 ;[is a number, therefore a valid hex digit]
  ANDIM &DF ;force upper case
- CMPIM "G"
- BCS TSTNRX ;[>'F' so fail]
- CMPIM "A"
- BCC TSTNRX ;[<'A' so fail]
- PHP ;save V
- SBCIM ALPHAA -&0A ;convert to hex
+ PHP ;C=0; save V
+ ADCIM &B9 ;= &FA - 'A'
  PLP ;restore V
+ CMPIM &FA ;b7..4 = %1111, discarded
+ BCC TSTNRX ;[<>'A'-'F' so fail]
 ; C=1
 TSTH0  ;C=1
  INY
@@ -583,6 +577,7 @@ TSTH0  ;C=1
 
 
 WRCH  ;system write character
+ CLC ;don't sink after null NETV, don't print w/o VDU
  PHA ;save character on stack
  TXA ;save registers
  PHA
@@ -608,7 +603,6 @@ WRCH  ;system write character
 ;
 WRCNTN
 
- CLC ;in case VDU not selected
  LDAIM WRVDU
  BIT WRCHSW
  BNE WRCHNV ;[WRCH not to VDU]
