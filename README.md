@@ -28,6 +28,7 @@ OS 1.26 / NOSP has the following modifications:
   before the write, which upsets some hardware
 - OSBYTE 206 [does not affect the stability][3] of other OSBYTE calls
   (thanks to TobyLobster)
+- OSWRCH enters NETV with C=0 so OSBYTE 208 does not disrupt printing
 - OSFILE with A=0 (save file) reads data only from the source processor
 - File handle 0 is not valid in RFS
 - Main memory is cleared faster on power up or 'critical' BREAK
@@ -39,11 +40,11 @@ OS 1.26 / NOSP has the following modifications:
   by J.G.Harston)
 - RFS file searching and `*CAT` terminate when an RFS ROM is present
   in slot 0 (thanks to J.G.Harston)
-- 561 bytes cleared in the main section + 1 existing = 562 bytes free
+- 563 bytes cleared in the main section + 1 existing = 564 bytes free
 - 21 bytes cleared in the top page
 
 The free space is placed at the end of the \*command table, currently
-located at address &DEAC.
+located at address &DEB6.
 
 Speech Driver
 -------------
@@ -58,7 +59,7 @@ Installation notes and source code are found in `spdrv.txt`.
 OS 1.26
 -------
 
-The [main branch][6] retains speech processor support and makes 266
+The [main branch][6] retains speech processor support and makes 268
 bytes of the ROM available in total.
 
 STARGO / NOSP
@@ -77,7 +78,7 @@ option in `src/MOSHdr` enables:
   to paged ROMs only, or to the paged ROM slot number given in hex
 - `*:::` \[&lt;*command*&gt;\] sends a command to the filing system only
 - `*FX 5,n` flashes the keyboard LEDs while waiting for the printer
-- 384 + 1 bytes free
+- 386 + 1 bytes free
 
 The rest of this document describes vanilla OS 1.26 / NOSP.
 
@@ -111,7 +112,7 @@ build OS 1.26 / NOSP, assembled in a file named `nosp`:
     *Quit
 
 The current ROM image has an MD5SUM of
-`c5641dee134052b1137ec209c02198fc`.
+`676accfd3d7ca1f3bb624df3d36758b9`.
 
 Build requirements: disc images
 -------------------------------
@@ -135,7 +136,7 @@ Patching the \*command table
 The space now available makes it practical to add *star commands* to the
 built-in OS command set.  New entries can be appended in place of the
 terminator sequence at `src/MOS38` line 310, currently located at
-address &DEAB.
+address &DEB5.
 
 Command table entries have the following form:
 
@@ -186,24 +187,24 @@ here, there must remain a `""` entry earlier in the table.
 
 ### Useful addresses
 
-Pointing a \*command at `CLIEND` (&E169) passes it to paged ROMs or the
+Pointing a \*command at `CLIEND` (&E175) passes it to paged ROMs or the
 current filing system.  This is convenient for disposing of the
 abbreviated forms of a command; the most efficient auxiliary byte value
 is &FF.
 
 To bypass utility ROMs, an action address equal to `JMIFSC - &07`
-(&E172) sends the command straight to the filing system control vector,
+(&E17E) sends the command straight to the filing system control vector,
 defined at &021E.
 
-`JMIUSR` (&F0B9) sends a \*command to USERV, defined at &0200.  An
+`JMIUSR` (&F0BB) sends a \*command to USERV, defined at &0200.  An
 auxiliary byte value of &01 emulates `*LINE`; other values (between &02
 and &DF inclusive) cause entry into the USERV routine with non-standard
 reason codes.
 
-In a routine handling the new command, `SKIPSP` (&E17D) may be passed
+In a routine handling the new command, `SKIPSP` (&E189) may be passed
 the current offset into the command in Y.  It returns a non-space
 character in A, its offset in Y, and `EQ` if that character is CR.
-`SKIPSN` (&E17C) is the same but ignores the current character by
+`SKIPSN` (&E188) is the same but ignores the current character by
 advancing Y over it.
 
 As an example, a command named `I` whose routine begins with
@@ -227,13 +228,14 @@ More space at a pinch
 ---------------------
 
 If it comes to the crunch a little more room can be made by
-reassembling, minus some frills.  Fifty-three bytes can be saved by
+reassembling, minus some frills.  Sixty-two bytes can be saved by
 reverting portions of source code to the original.  They are:
 
 - 27 bytes unrolling the memory clearing loop (in `src/MOS34`)
 - 5 bytes ensuring RFS file searching terminates (in `src/MOS54`)
 - 6 bytes calculating the cassette file size (in `src/MOS72`)
 - 3 bytes providing the OSWRSC entry (in `src/MOS99`)
+- 9 bytes making faster palette changes (in `src/MOS03`, `src/MOS11`)
 - 4 bytes speeding up character recognition (in `src/MOS11`)
 - 8 bytes freeing &02CF..D1 for programs (in `src/MOS34`, `src/MOS38`).
 
@@ -252,9 +254,9 @@ Installing
 OS 1.26 is suitable for programming into a 27128 or 27C128 EPROM to be
 installed in IC 51, the dedicated OS ROM socket of the Model A/B
 motherboard.  
-Due to the amount of published software relying on the exact contents
-of OS 1.20, it is recommended to install OS 1.26 in such a way that
-OS 1.20 remains available.
+Due to the large amount of published software relying on the exact
+contents of OS 1.20, it is recommended to install OS 1.26 in such a way
+that OS 1.20 remains available.
 
 An OS RAM module from [BooBip.com][13] fits between the OS ROM and its
 socket, and allows the ROM to start the computer at power up; it can
@@ -288,7 +290,7 @@ Known problems
   (it too can be [reassembled][15] to work with this OS).
 - Slogger's Tape to Challenger 3 ROM (T2C3) 1.00 jumps to the hard-coded
   address of the OSBYTE handler in OS 1.20, causing a crash on the next
-  call to OSBYTE. (Patch &8F15 = `JMP &E8AD`.)
+  call to OSBYTE. (Patch &8F15 = `JMP &E8AF`.)
 - Many software titles, especially games, decrypt themselves using the
   OS ROM contents as a key.  These titles are incompatible with OS
   1.26 / NOSP.
