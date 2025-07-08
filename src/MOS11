@@ -289,6 +289,12 @@ PRBB1  ;return low water mark
  TAY
  RTS
 
+;place new table after GADDR but within VDU code area
+DCCTAB
+ = &50,&00 ;4 colour modes toggle b4,b6, zero terminates
+ = &30,&70,&30 ;16 colour modes toggle b4,b5,b6, next byte terminates
+ = &00,&60,&00,&60 ;4 colour modes move Logi b6 to b5
+
 ENDVDU  ;end of VDU code
 ; Now test code layout for correctness
 

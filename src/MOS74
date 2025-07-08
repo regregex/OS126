@@ -408,8 +408,8 @@ RDHDLC CMPIM "*"
  INC INFO +BKNOLO ;Have "read" short block header, so
  BNE RDHDX2 ;increment block number as if we have read whole header
  INC INFO +BKNOHI
-RDHDX2 LDXIM &FF ;Prepare for non-DCD exit
- BIT FFBYT ;Set the V flag => not end of SFS
+RDHDX2 ADCIM &7F ;C=1, A=&23; set V:=1 => not end of SFS, A:=&A3
+ TAX ;Prepare for non-DCD exit (X:=&A3, HW=4; was X:=&FF)
  BNE RDHDX1 ;Assumed always +ve
 
 ROMER LDAIM NCTBIT
