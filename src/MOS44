@@ -525,18 +525,15 @@ MOTOR  ;control cassette motor
 TXBAUD  ;set RS423 transmit baudrate (N.B. A=$08)
  LDAIM &38
 RXBAUD  ;set RS423 receive baudrate (N.B. A=$07)
- EORIM &3F ;Rx: A=$38,  Tx: A=$07
+ EORIM &7F ;Rx: A=$78,  Tx: A=$47
  STA MASK
  LDY SPREGA
  CPXIM &09
  BCS BAUD1 ;[bad baud selection]
- ANDAX BAUDS ;extract serproc baud bits
- STA BAUD
  TYA
- ORA MASK
- EOR MASK ;clear slot for baudrate
- ORA BAUD
- ORAIM &40 ;set cassette/RS423 bit
+ EORAX BAUDS
+ AND MASK
+ EOR SPREGA ;NB bit 6 = 1
  EOR RSCASS ;select cassette/RS423
 ;
 STASP  ;used by MOTOR and RESET

@@ -80,6 +80,9 @@ BYTE2  ;C=0 => OSWORD call
  TXA ;A := reason code
  JSR JMINET ;args in BYTEA, BYTEX, BYTEY (call type in A)
  BVS OSRET ;[net substituted result]
+ SEI
+;re-disable interrupts in case a naughty NETV cleared I
+;previous interrupt state was saved at BYTE/WORD
 ;
 ; construct specific OSBYTE routine address
 ;
@@ -230,7 +233,9 @@ NOTE  ;add note to note buffer
 ; sound command
 ;
  DEY ;Y := 0
- JSR NOTEX ;C => flush,  A = channel,  Y := 1
+ LDAIY WORDX
+ CMPIM &10
+ ANDIM &03  ;C => flush,  A = channel
  ORAIM &04 ;********** N.B. assumes BSND1=4
  TAX ;X := (internal) sound bufferid
  BCC NOTENF ;[do not flush channel]
@@ -239,10 +244,12 @@ NOTE  ;add note to note buffer
 ;
 ; C=1
  JSR PURGEX ;purge buffer
- LDYIM &01 ;restore Y
 ;
 NOTENF
- JSR NOTEX ;C => release continue,  A = chordcount-1
+ LDYIM &01 ;restore Y
+ LDAIY WORDX
+ CMPIM &10
+ ANDIM &03 ;C => release continue,  A = chordcount-1 
  STA NOTEWK
 ;
  PHP ;needed in order to share code with BELL
@@ -392,12 +399,6 @@ NVLP2
 ;
  RTS
 
-NOTEX  ;extract byte info from offset Y of vector
- LDAIY WORDX
- CMPIM &10 ;C => flag (flush or release continue)
- ANDIM &03
- INY ;step Y to next slot
- RTS
 
 RITM  ;read interval time
  LDXIM STPW+&5-TIME
@@ -569,16 +570,13 @@ BUFESC  ;escape exit (C=1)
 ;flash keyboard LEDs while waiting for printer buffer to purge
 ;C=1
 SPFL
- [ STARGO = &00
- PHA ;save FX call number
  TXA
  PHA ;save printer selection
  JSR MOSTST ;flash LEDs
  PLA
  TAX ;restore printer selection
- PLA ;restore FX call number
+ LDAIM &05 ;restore FX call number
  SEC ;restore C=1
- ]
 
 SPRINT  ;change printer selection (*FX 5)
 ; allow interrupts during wait, this means that:
@@ -612,11 +610,10 @@ ARRPT  ;A = $0C, set auto-repeat repeat count
  LDXIM DAUTOP
 ARRPT1  ;A = $0C, C=1
 ARDLY  ;A = $0B, C=1, set auto-repeat delay count (0 => disable)
- ADCIM FARSET-VBASE-&01-&0B- 233 ;$01 for carry, $0B for FX base
+ ORAIM &D0 ;preserve C=1
 ;
 V2B34  ;C=1
- CLC
- ADCIM  233 ;convert FX 3&4 to FX 236,237
+ ADCIM  233 -&01 ;convert FX 3&4 to FX 236,237
 ;
 SETVX
  STX BYTEX

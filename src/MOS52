@@ -90,10 +90,10 @@ SENDX  ;entered by code which has already done a PHP
  STA &FE4F
  INY
  STY &FE40
- LDYIM &02
+ INY ;Y=1
 SWAIT
  DEY
- BNE SWAIT
+ BEQ SWAIT
  LDYIM &08
  STY &FE40
  LDYIM &04
@@ -341,7 +341,8 @@ NOTWT
  LDA NOWAT
  BEQ SRTS ;[full chord already accepted,ignore this channel for now]
  INCAX WAIT ;set waiting flag
- BIT NOWAT ;check for chord being built
+;Y undefined after EXAM (NAUG p.137)
+ TAY ;check for chord being built (different V returned)
  BPL SMCRD ;chord already being built
  JSR EXAM ;getheader byte again
  ANDIM &03 ;select chord bits
