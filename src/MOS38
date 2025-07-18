@@ -579,10 +579,10 @@ TSTH0  ;C=1
 ;REM (and entangled routines) moved up the ROM
 ;to denote compatibility with both the documentation
 ;(AUG p.263, NAUG p.137) and the non-compliant OS:
-;V=0, REMOV returns the byte in A (for internal calls
-;           and as documented) and in Y (for OSBYTE &91);
-;V=1, EXAM  returns the byte in A (for internal calls)
-;           and in Y (for OSBYTE &98 and as documented).
+;V=0, REMOV returns the byte in A (for internal calls)
+;           and in Y (for OSBYTE &91 and as documented);
+;V=1, EXAM  returns the byte in A (for internal calls
+;           and as documented) and in Y (for OSBYTE &98).
 ;Location &022D in the I/O processor NOT containing values
 ;&E4 or &E5 indicates conformance with the above.
 ;(If fetching this value across the Tube is expensive,
