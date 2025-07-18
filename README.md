@@ -26,6 +26,8 @@ OS 1.26 / NOSP has the following modifications:
 - The paged ROM indirection routine places one byte less on the stack
 - OSBYTE calls to write to I/O memory avoid causing a dummy read cycle
   before the write, which upsets some hardware
+- OSBYTE 152 returns the next buffer entry in Y as documented, and
+  the correct implementation is detectable
 - OSBYTE 206 [does not affect the stability][3] of other OSBYTE calls
   (thanks to TobyLobster)
 - OSWRCH enters NETV with C=0 so OSBYTE 208 does not disrupt printing
@@ -40,7 +42,7 @@ OS 1.26 / NOSP has the following modifications:
   by J.G.Harston)
 - RFS file searching and `*CAT` terminate when an RFS ROM is present
   in slot 0 (thanks to J.G.Harston)
-- 563 bytes cleared in the main section + 1 existing = 564 bytes free
+- 567 bytes cleared in the main section + 1 existing = 568 bytes free
 - 21 bytes cleared in the top page
 
 The free space is placed at the end of the \*command table, currently
@@ -59,7 +61,7 @@ Installation notes and source code are found in `spdrv.txt`.
 OS 1.26
 -------
 
-The [main branch][6] retains speech processor support and makes 268
+The [main branch][6] retains speech processor support and makes 272
 bytes of the ROM available in total.
 
 STARGO / NOSP
@@ -78,7 +80,7 @@ option in `src/MOSHdr` enables:
   to paged ROMs only, or to the paged ROM slot number given in hex
 - `*:::` \[&lt;*command*&gt;\] sends a command to the filing system only
 - `*FX 5,n` flashes the keyboard LEDs while waiting for the printer
-- 386 + 1 bytes free
+- 400 + 1 bytes free
 
 The rest of this document describes vanilla OS 1.26 / NOSP.
 
@@ -112,7 +114,7 @@ build OS 1.26 / NOSP, assembled in a file named `nosp`:
     *Quit
 
 The current ROM image has an MD5SUM of
-`676accfd3d7ca1f3bb624df3d36758b9`.
+`dca540f38d1e7fb138f86cba0baa1a4c`.
 
 Build requirements: disc images
 -------------------------------
@@ -187,24 +189,24 @@ here, there must remain a `""` entry earlier in the table.
 
 ### Useful addresses
 
-Pointing a \*command at `CLIEND` (&E175) passes it to paged ROMs or the
+Pointing a \*command at `CLIEND` (&E179) passes it to paged ROMs or the
 current filing system.  This is convenient for disposing of the
 abbreviated forms of a command; the most efficient auxiliary byte value
 is &FF.
 
 To bypass utility ROMs, an action address equal to `JMIFSC - &07`
-(&E17E) sends the command straight to the filing system control vector,
+(&E182) sends the command straight to the filing system control vector,
 defined at &021E.
 
-`JMIUSR` (&F0BB) sends a \*command to USERV, defined at &0200.  An
+`JMIUSR` (&F0BC) sends a \*command to USERV, defined at &0200.  An
 auxiliary byte value of &01 emulates `*LINE`; other values (between &02
 and &DF inclusive) cause entry into the USERV routine with non-standard
 reason codes.
 
-In a routine handling the new command, `SKIPSP` (&E189) may be passed
+In a routine handling the new command, `SKIPSP` (&E18D) may be passed
 the current offset into the command in Y.  It returns a non-space
 character in A, its offset in Y, and `EQ` if that character is CR.
-`SKIPSN` (&E188) is the same but ignores the current character by
+`SKIPSN` (&E18C) is the same but ignores the current character by
 advancing Y over it.
 
 As an example, a command named `I` whose routine begins with
@@ -279,18 +281,41 @@ together.  The EPROM is fitted with care.  The computer then runs the OS
 in the first or second half of the device, respectively.  
 The switch or jumper must not be toggled while the computer is running.
 
+OSBYTE 152
+----------
+
+The OS call to examine the next entry in a system buffer had had a
+fault, which was later fixed in Electron OS 1.00 and OS 2.00 for the
+Model B+.
+
+Although it is also possible to fix the bug by intercepting the REMV
+vector, the [established workaround][14] for this call relies on the
+value returned in Y instead of the expected entry.  Cross-platform
+applications need to know which OS is running to engage the workaround,
+and until this release it was enough to verify that a series 1 OS was
+installed, by receiving X=1 from an [OSBYTE call with A=0][15] and X=1,
+before using the OSBYTE 152 result to look up the actual entry.
+
+With the bug fixed in this edition, the test must be refined.
+REMV handlers featuring the bug are entered at points between &E45B and
+&E5BD inclusive, but it suffices to test the high byte of REMV, at
+location &022D in the I/O processor, for values &E4 or &E5.  Other
+values indicate that OSBYTE 152 behaves as documented.  
+Where this test is expensive, such as on the coprocessor, it need only
+be performed if the OS test mentioned above confirms a series 1 OS.
+
 Known problems
 --------------
 
 - Certain \*commands in the Opus DDOS and Challenger ROMs corrupt the
-  stack, causing a crash on exit ([patched disassemblies][14]
+  stack, causing a crash on exit ([patched disassemblies][16]
   are available).
 - Acornsoft's Graphics Extension ROM (GXR) 1.20 ignores all graphics
   commands, as it contains hard-coded internal references to OS 1.20
-  (it too can be [reassembled][15] to work with this OS).
+  (it too can be [reassembled][17] to work with this OS).
 - Slogger's Tape to Challenger 3 ROM (T2C3) 1.00 jumps to the hard-coded
   address of the OSBYTE handler in OS 1.20, causing a crash on the next
-  call to OSBYTE. (Patch &8F15 = `JMP &E8AF`.)
+  call to OSBYTE. (Patch &8F15 = `JMP &E8AE`.)
 - Many software titles, especially games, decrypt themselves using the
   OS ROM contents as a key.  These titles are incompatible with OS
   1.26 / NOSP.
@@ -308,8 +333,10 @@ Known problems
 [11]: http://regregex.bbcmicro.net/#prog.os126
 [12]: https://www.zeridajh.org/hardware/gosdc/index.html
 [13]: http://www.boobip.com/hardware/osram
-[14]: http://regregex.bbcmicro.net/#features.bbc
-[15]: https://github.com/regregex/GXR
+[14]: https://beebwiki.mdfs.net/OSBYTE_%2698
+[15]: https://beebwiki.mdfs.net/OSBYTE_%2600
+[16]: http://regregex.bbcmicro.net/#features.bbc
+[17]: https://github.com/regregex/GXR
 
 * * *
 
