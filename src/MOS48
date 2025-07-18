@@ -82,11 +82,9 @@ VP1  ;program vidproc register 1 (FX entry)
  TXA
 MVPRC1  ;set video processor register 1
  EORIM &07 ;adjust value accounting for ULA bug
- PHP
- SEI ;**** DISABLE INTERRUPTS ****
+;interrupts were disabled at BYTE
  STA VPREGB ;update RAM image
  STA VPROC1 ;update ULA
- PLP
  RTS
 
 ; fetch/store byte from MMIO without dummy read cycle

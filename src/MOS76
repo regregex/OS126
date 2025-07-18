@@ -185,6 +185,7 @@ ERRABT PLA
  JSR ECLOSE ;close EXEC file
  LSR ESSEMA ;Switch off critical region
  JSR BEEPOF ;Motor off/BEEP
+VSTREZ
  JMI FTPTR ;Abort = break with error msg.
 
 PRTERR PLA  ;Restore hi byte of pointer
@@ -237,7 +238,7 @@ VSTREX PLP  ;Restore stack
 
 ;Exit always with Z CLEAR
 
-VSTREZ JMI FTPTR
+ BNE VSTREZ
 
 
 CMPFT
