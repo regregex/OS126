@@ -34,7 +34,8 @@ NOTCEA CMPIM &7F ;No?, then form vector
 NOTC20 ;A dead
  LDA STATS
  LSRA ;C=1 if printer module on
- BPL CSWDEX ;& ditto
+ JMP CSWDEX ;& ditto
+ ;BPL CSWDEX ;& ditto
 
 ISDEL LDAIM &20 ;(Form correct index for DEL)
 
@@ -51,8 +52,9 @@ NOTDEL TAY
  LSRA
  LSRA
  LSRA
- CLC
- ADCIM CODORG ;Forms the high byte of the vector
+;C contains bit 3 i.e. C=1 if <9 bytes to queue
+;codorg offset in b6..4 and adcim operand account for this
+ ADCIM CODORG -&01 ;Forms the high byte of the vector
  STA JVEC +&01
  BIT STATS ;Swap back again if C.E.
  BVS NOTC10
@@ -68,15 +70,15 @@ QING STAAX QEND-&FF  ;Q the byte
  BMI DISABL
  BVS NOTCEB ;C.E. mode, then do swapping
  JSR RUNNER
+CLCEX
  CLC
  RTS
 
 NOTCEB JSR CSWAP
  JSR OCSRDL
  JSR RUNNER
-NOTC10 JSR REXE10
-CLCEX CLC
- RTS
+ CLC
+ BCC REXE10
 
 DISABL LDY JVEC +&01 ;Was this an SOH ?
  CPYIM /(SOH )
@@ -111,6 +113,7 @@ REXEC ;starting +2 from NOTC20; 1 spare byte
 CSWDEX ;enter with C=printer module on ;-5 = -1; 4 spare bytes
  BIT STATS ;Following preserves c
  BVC ACK ;Not C.E. so exit
+NOTC10
 REXE10 JSR OCSRWR ;Write output cursor
 
 ;CSWAP - swap input and output text cursors
@@ -216,6 +219,36 @@ ENQ LDA NPIX ;Is this a graphics mode ?
  LDAIM &20 ;Hide cursor
  JSR ETCB ; Preserves flags
  BNE STTOR ;Set bit 5 of STATS, (A) preserved by ETCB
+
+;VDUB for cursor control keys
+;Now entered with character in Y
+
+VDUB
+ LDA QPOSN ;Qing bytes ?
+ BNE EOTEXT ;Yes?, then ignore this
+ LDAIM &A0 ;To see if the cursors are joined or drivers disabled when BIT is done
+ BIT STATS ;Are the drivers enabled ?
+ BNE EOTEXT ;Leave if not, or cursors joined
+ TYA ;save character
+ PHA
+ BVS VDUBA ;Are we in cursor edit mode ? Yes?, then skip
+ LDA CSTEMP ;Flash the cursor at twice the rate
+ ANDIM &9F ;Sets b5=0, b6=1 of r10 of 6845, giving fast flashing cursor
+ ORAIM &40
+ JSR ETCB ;Store in r10 of 6845, don't save to CSTEMP
+ LDXIM CSX-V ;Set b1 of STATS or store CSX to PCSX
+ LDYIM PCSX-V
+ JSR COPY2
+ JSR OCSRWR ;Print the output cursor
+ LDAIM &02 ;Set b1 of STATS
+ JSR STTOR
+VDUBA LDAIM &BF ;Clear b6 of STATS
+ JSR STTAND
+ PLA  ;Restore input character to routine
+ ANDIM &7F ;Kill the parity bit
+ JSR VDU ;Execute cursor movement on input cursor
+ LDAIM &40 ;Set b6 of STATS
+ BNE STTOR
 
 ;ACK ($06) - Turn VDU drivers on again
 ;Clear bit 7 of STATS
@@ -336,6 +369,13 @@ CSR LDX CSX ;Cursor over RH col ?
  LDA CSPOSN +&01 ;to posn. of csr.
  ADCIM &00 ;sets n for test in CSDSPA
  JMP CSDSPA
+;LF ($0A) - Cursor down 1 character line
+
+LF LDA STATS ;Encode ANOMQ because this routine often referenced
+ ANDIM &20
+ BEQ CSD
+CSAD LDXIM &02
+ BNE GCSCHD
 CSRC LDA TWLCOL ;Put csr = LH edge
  STA CSX ;& fall through to ...
 
@@ -378,9 +418,9 @@ GCSCHU STX ZTEMP +&01 ;Store offset
  BCC GCSHUA
  INCAX GCSIR+&01
 GCSHUA LDA ZTEMP ;Get window
- BNE GCSHDB ;Out of window to begin with?, then skip
+ BNE GCSHUB ;Out of window to begin with?, then skip
  JSR WINDCS ;Window current point
- BEQ GCSHDB ;Still inside? , then return
+ BEQ GCSHUB ;Still inside? , then return
  LDX ZTEMP +&01 ;Gone outside?, then go to low margin
  LDAAX GWLCOL
  CPXIM &01 ;Plot by Y?, then go up a line
@@ -392,15 +432,10 @@ GCSHUC STAAX GCSIR
  STAAX GCSIR+&01
  TXA  ;Plot by X?
  BEQ CSAD ;Yes?, then go down a line as well
+GCSHUB
  JMP IEG ;No?, then exit
 
 
-;LF ($0A) - Cursor down 1 character line
-
-LF JSR ANOMQ
- BEQ CSD
-CSAD LDXIM &02
- JMP GCSCHD
 
 ;FS ($1C) Define text area
 
@@ -521,16 +556,13 @@ US JSR ANOMQ ;Cursors joined ?
  JSR SYTADD ;Attempt to posn. csr
  BCC FSD ;to a JMP CSDSP
 
-USAF LDXIM CSX-V
- LDYIM USWS-V
- JMP SWAP2
-
 FFC
  JMP CLATXT ;Clear?, then fast clear
 
 ;CR ($0D) Carriage return
 
-CR JSR ANOMQ
+CR LDA STATS ;Encode ANOMQ because this routine often referenced
+ ANDIM &20
  BNE CRAN
 CRA JSR SSCRIM ;Position cursor to LH edge of window
  JMP CSDA ;Display cursor & TADDR

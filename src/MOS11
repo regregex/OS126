@@ -212,33 +212,6 @@ GADDRC STA ZMEMG +&01 ;Store final address, MSB
 COPYZX LDAIM &00 ;Sets z=1
  RTS
 
-;VDUB for cursor control keys
-
-VDUB
- PHA
- LDAIM &A0 ;To see if the cursors are joined or drivers disabled when BIT is done
- LDX QPOSN ;Qing bytes ?
- BNE VDUBEX ;Yes?, then ignore this
- BIT STATS ;Are the drivers enabled ?
- BNE VDUBEX ;Leave if not, or cursors joined
- BVS VDUBA ;Are we in cursor edit mode ? Yes?, then skip
- LDA CSTEMP ;Flash the cursor at twice the rate
- ANDIM &9F ;Sets b5=0, b6=1 of r10 of 6845, giving fast flashing cursor
- ORAIM &40
- JSR ETCB ;Store in r10 of 6845, don't save to CSTEMP
- LDXIM CSX-V ;Set b1 of STATS or store CSX to PCSX
- LDYIM PCSX-V
- JSR COPY2
- JSR OCSRWR ;Print the output cursor
- LDAIM &02 ;Set b1 of STATS
- JSR STTOR
-VDUBA LDAIM &BF ;Clear b6 of STATS
- JSR STTAND
- PLA  ;Restore input character to routine
- ANDIM &7F ;Kill the parity bit
- JSR VDU ;Execute cursor movement on input cursor
- LDAIM &40 ;Set b6 of STATS
- JMP STTOR
 
 ;Copy key in cursor editing
 
@@ -303,7 +276,7 @@ T2 * DCA:SHR:&8-CODORG:SHR:&3
 T3 * DCB:SHR:&8-CODORG:SHR:&3
 T4 * DCC:SHR:&8-CODORG:SHR:&3
 T5 * SYN:SHR:&8-CODORG:SHR:&3
-T6 * ETB:SHR:&8-CODORG:SHR:&3
+T6 * ETB:SHR:&8-CODORG+&1:SHR:&3
 T7 * CAN:SHR:&8-CODORG:SHR:&3
 T8 * EM:SHR:&8-CODORG:SHR:&3
 T9 * FS:SHR:&8-CODORG:SHR:&3

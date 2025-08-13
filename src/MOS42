@@ -200,7 +200,6 @@ RDCHK
  TAY ;save X
  TXA
  PHA
- TYA
  JSR VDUB ;N.B. cursor control entry point
  PLA
  TAX ;restore X

@@ -87,9 +87,10 @@ SETZG TXA
 
 EMAD ASLA  ;Is it a line or curve ?
  BMI EXGREF ;Curve, so reference user routine
- ASLA
- ASLA  ;It's a line, so is the first point to be plotted again?
- BPL EMAB ;No, then skip this, as routine plots both anyway
+;A,C clobbered in WPLOTA->GADDW->WIND->WINDA
+;or LINE->LINSA->TRISA->TRISAA
+ ANDIM &20 ;It's a line, so is the first point to be plotted again?
+ BEQ EMAB ;No, then skip this, as routine plots both anyway
 ;
  [ STARTP=0
 ; plot start point twice

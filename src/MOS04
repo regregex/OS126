@@ -189,36 +189,6 @@ PRABA LDAIY ZTEMPC ;Copy definition
  BNE PRABA
  RTS
 
-;Get the next line up,
-;test if wraparound
-;This is here as padding
-
-SUBROW PHA
- TXA
- SEC
- SBC BYTROW
- TAX
- PLA
- SBC BYTROW +&01
- CMP BEGSCN
- RTS
-
-;NORTH
-
-; Returns zero false
-NBDY SEC
- LDA ZMEMG
- SBC BYTROW
- STA ZMEMG
- LDA ZMEMG +&01
- SBC BYTROW +&01
- CMP BEGSCN ;Wraparound ?
- BCS NBDYA
- ADC BYTSCN
-NBDYA STA ZMEMG +&01
- LDYIM &07
- RTS
-
 CLASCA STAAX &3000 ;Modes 1-3 (20K)
  STAAX &3100
  STAAX &3200
@@ -302,6 +272,21 @@ CLASCE STAAX &7C00 ;Mode 7 (1k = TTX)
  INX
  BEQ ENSCRX
 RUNNER JMI JVEC
+
+;Get the next line up,
+;test if wraparound
+;This is here as padding
+
+SUBROW PHA
+ TXA
+ SEC
+ SBC BYTROW
+ TAX
+ PLA
+ SBC BYTROW +&01
+ CMP BEGSCN
+FONT0
+ RTS
 
 FONT
 ;

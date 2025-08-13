@@ -510,28 +510,6 @@ CMOTOR LDAIM FXMOTR  ;=> motor function
  LDY CURDRV
  JMP OSBYTE
 
-CHKHND
-
-;Check handle in Y is open
-;and corresponds to mask in A
-
- ;squash and bugfix: Y=0 not accepted by RFS when OUTHND open in CFS
- AND CFSTAT
- CPYIM OUTHND
- BNE CHKHN1
- LSRA
- DEY
-CHKHN1
- DEY
- CPY SROMSW
- BNE HNDERR
- LSRA
- BCS CHKHXX
-
-
-HNDERR BRK
- = CFSERB
- = "Channel",0
  
 
 

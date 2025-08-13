@@ -523,6 +523,7 @@ CATOFF LDAIM NCTBIT
 ANDSTA AND CFSTAT
 ANDSTB STA CFSTAT
 
+FINDXX
  RTS
 
 ORLST
@@ -531,6 +532,22 @@ ORLST
 ORSTAT ORA CFSTAT
  BNE ANDSTB ;Assumed always non-zero
 
+SHUTW
+
+ LDAIM OUTHND
+ AND CFSTAT
+ BEQ FINDXX ;If already shut, dont bother
+
+ LDAIM &00
+ STA OUTHDR +BKSZEH
+
+ LDAIM LASTBK
+ LDX OUTPTR
+ STX OUTHDR +BKSZEL
+ STA OUTHDR +BKFLAG
+ JSR WRTBFR ;Write out block
+ LDAIM NOUTHD
+ BNE ANDSTA ;Mark file as closed
 
 
 
@@ -671,7 +688,28 @@ SHUTL1 LSRA
  LSRA
  BCS SHUTL2 ;Shut output file
 
- JMP HNDERR ;Invalid handle
+HNDERR BRK
+ = CFSERB
+ = "Channel",0
+
+CHKHND
+
+;Check handle in Y is open
+;and corresponds to mask in A
+
+;squash and bugfix: Y=0 not accepted by RFS when OUTHND open in CFS
+ AND CFSTAT
+ CPYIM OUTHND
+ BNE CHKHN1
+ LSRA
+ DEY
+CHKHN1
+ DEY
+ CPY SROMSW
+ BNE HNDERR
+ LSRA
+ BCC HNDERR
+ RTS
 
 SHUTL2 JSR SHUTW
 JFINDEX
@@ -770,7 +808,6 @@ GBEXX PLA
  PLA
  TAX
  LDA TEMP
-FINDXX
  RTS
 
 
@@ -778,22 +815,6 @@ FINDXX
 
 
 
-SHUTW
-
- LDAIM OUTHND
- AND CFSTAT
- BEQ FINDXX ;If already shut, dont bother
-
- LDAIM &00
- STA OUTHDR +BKSZEH
-
- LDAIM LASTBK
- LDX OUTPTR
- STX OUTHDR +BKSZEL
- STA OUTHDR +BKFLAG
- JSR WRTBFR ;Write out block
- LDAIM NOUTHD
- JMP ANDSTA ;Mark file as closed
 
 
 WRTBFR  ;Write out buffer
