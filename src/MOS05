@@ -30,13 +30,11 @@ ENSCRN BVS ENSCRO ;If OUTPUT cursor, skip
  PLA  ;Cheat return stack
  PLA
  JMP CSDA
-ENSCRO PHP  ;To preserve carry
- CMP PCSY  ;Would the input cursor like to go off screen ?
- BEQ ENSCRP ;Yes?, then don't readdress it
- PLP  ;Restore the carry, to see which way to go
+ENSCRO ;preserve carry
+ EOR PCSY  ;Would the input cursor like to go off screen ?
+ BEQ ENSCRR ;Yes?, then don't readdress it
  BCC ENSCRQ
  DEC PCSY ;Scroll DOWN, so follow it down
-FONT0
 ENSCRX RTS ;May be referenced from MOS04
 ENSCRQ INC PCSY ;Scroll UP, so go up as well
  RTS
@@ -75,6 +73,21 @@ OCSRIU PHA
 OCSRIW DEY
  BPL OCSRIU
  BMI OCSREX ; Branch always
+
+;(SORTY exits with (X)<(Y))
+
+SORTA LDXIM NEWPT-V
+ LDYIM OLDCS-V
+SORTY LDAAX V+&02
+ CMPAY V+&02
+ LDAAX V+&03
+ SBCAY V+&03
+ BPL SWAPF
+ RTS
+
+USAF LDXIM CSX-V
+ LDYIM USWS-V
+ BNE SWAP2
 
 ;Soft scrolling (non-anom.)
 
@@ -128,17 +141,6 @@ SWAPA LDAAX V
  BNE SWAPA
  RTS
 
-
-;(SORTY exits with (X)<(Y))
-
-SORTA LDXIM NEWPT-V
- LDYIM OLDCS-V
-SORTY LDAAX V+&02
- CMPAY V+&02
- LDAAX V+&03
- SBCAY V+&03
- BPL SWAPF
- RTS
 
 ;Soft scroll UP
 
@@ -317,10 +319,9 @@ TADDRY LDA CSY ;Twice row no. to Y
  INY
  LDAIM &02
  AND MEMODE ;Non-zero if table offset is to be halved
- PHP
+ CMPIM &01
  LDAIY ZTBL ;LSB
- PLP
- BEQ TADDRH
+ BCC TADDRH
  LSR ZMEMT+&01
  RORA
 TADDRH ADC TOPSCN ;c=0 Add LSB
@@ -447,6 +448,32 @@ DELA LDAIM &7F ;Point to DEL, only unprintable char. in hard font =$FF...$FF
  LDYIM &00 ;Mode is STORE
  BEQ PRANC
 
+PTTX ;C=1 from NOTCEA->VDUPR
+TTXFRM ;transform once for ASCII->Teletext, twice for Teletext->ASCII
+ EORIM &23 ;is character ASCII &23, hash?
+ BEQ PTTX5F ;then replace with Teletext &5F
+;PTTX23
+ EORIM &23:EOR:&5F ;else is it ASCII &5F, underscore?
+ BEQ PTTX60 ;then replace with Teletext &60
+PTTX5F EORIM &5F:EOR:&60 ;else is it ASCII &60, sterling?
+ BEQ PTTX23 ;then replace with Teletext &23 (won't loop!)
+PTTX60 EORIM &60 ;else undo our fiddling
+ BCC PTTXC ;if C=0 then transform only else C=1, write to screen
+ STAIX ZMEMT ;as (X)=0
+PTTXC RTS
+
+;Code duplicated to print ASCII &60 as fast as OS 1.20
+;(with zero penalty on other characters)
+
+PTTXSP LDAIM &20:EOR:&23 ;Print TTX space
+ SEC ;write to screen
+PTTX23 EORIM &23
+ BCC PTTX2C
+ STAIX ZMEMT
+PTTX2C RTS
+
+;Moved here to protect PTTX, PTTXSP and PFOUR from page boundary
+;1 cycle penalty on all exits
 ;DEL ($7F) Delete previous char
 
 DEL JSR BS ;Move back 1 character
@@ -458,22 +485,6 @@ DEL JSR BS ;Move back 1 character
  LDAIM HFMSB +&01 ;Point to hard font version of space
  STA ZTEMPC +&01
  BNE VDUPRB ;always branch
-
-PTTXSP LDAIM &20 ;Print TTX space
- SEC ;write to screen
-PTTX ;C=1 from NOTCEA->VDUPR
-TTXFRM ;transform once for ASCII->Teletext, twice for Teletext->ASCII
- EORIM &23 ;is character ASCII &23, hash?
- BEQ PTTX5F ;then replace with Teletext &5F
-PTTX23 EORIM &23:EOR:&5F ;else is it ASCII &5F, underscore?
- BEQ PTTX60 ;then replace with Teletext &60
-PTTX5F EORIM &5F:EOR:&60 ;else is it ASCII &60, sterling?
- BEQ PTTX23 ;then replace with Teletext &23 (won't loop!)
-PTTX60 EORIM &60 ;else undo our fiddling
- BCC PTTXC ;if C=0 then transform only else C=1, write to screen
- STAIX ZMEMT ;as (X)=0
-PTTXC
- RTS
 
 ;FOUR colour mode
 
