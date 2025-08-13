@@ -42,11 +42,12 @@ OS 1.26 / NOSP has the following modifications:
   by J.G.Harston)
 - RFS file searching and `*CAT` terminate when an RFS ROM is present
   in slot 0 (thanks to J.G.Harston)
+- `*FX 5,n` flashes the keyboard LEDs while waiting for the printer
 - 567 bytes cleared in the main section + 1 existing = 568 bytes free
 - 21 bytes cleared in the top page
 
 The free space is placed at the end of the \*command table, currently
-located at address &DEB6.
+located at address &DEBA.
 
 Speech Driver
 -------------
@@ -79,7 +80,6 @@ option in `src/MOSHdr` enables:
 - `*::` \[&lt;*slot*&gt;\]\[`,`\] \[&lt;*command*&gt;\] sends a command
   to paged ROMs only, or to the paged ROM slot number given in hex
 - `*:::` \[&lt;*command*&gt;\] sends a command to the filing system only
-- `*FX 5,n` flashes the keyboard LEDs while waiting for the printer
 - 400 + 1 bytes free
 
 The rest of this document describes vanilla OS 1.26 / NOSP.
@@ -114,7 +114,7 @@ build OS 1.26 / NOSP, assembled in a file named `nosp`:
     *Quit
 
 The current ROM image has an MD5SUM of
-`dca540f38d1e7fb138f86cba0baa1a4c`.
+`21f90472fc566a0bbaafc72132c1369f`.
 
 Build requirements: disc images
 -------------------------------
@@ -138,7 +138,7 @@ Patching the \*command table
 The space now available makes it practical to add *star commands* to the
 built-in OS command set.  New entries can be appended in place of the
 terminator sequence at `src/MOS38` line 310, currently located at
-address &DEB5.
+address &DEB9.
 
 Command table entries have the following form:
 
@@ -189,24 +189,24 @@ here, there must remain a `""` entry earlier in the table.
 
 ### Useful addresses
 
-Pointing a \*command at `CLIEND` (&E179) passes it to paged ROMs or the
+Pointing a \*command at `CLIEND` (&E17D) passes it to paged ROMs or the
 current filing system.  This is convenient for disposing of the
 abbreviated forms of a command; the most efficient auxiliary byte value
 is &FF.
 
 To bypass utility ROMs, an action address equal to `JMIFSC - &07`
-(&E182) sends the command straight to the filing system control vector,
+(&E186) sends the command straight to the filing system control vector,
 defined at &021E.
 
-`JMIUSR` (&F0BC) sends a \*command to USERV, defined at &0200.  An
+`JMIUSR` (&F0BF) sends a \*command to USERV, defined at &0200.  An
 auxiliary byte value of &01 emulates `*LINE`; other values (between &02
 and &DF inclusive) cause entry into the USERV routine with non-standard
 reason codes.
 
-In a routine handling the new command, `SKIPSP` (&E18D) may be passed
+In a routine handling the new command, `SKIPSP` (&E191) may be passed
 the current offset into the command in Y.  It returns a non-space
 character in A, its offset in Y, and `EQ` if that character is CR.
-`SKIPSN` (&E18C) is the same but ignores the current character by
+`SKIPSN` (&E190) is the same but ignores the current character by
 advancing Y over it.
 
 As an example, a command named `I` whose routine begins with
@@ -230,14 +230,13 @@ More space at a pinch
 ---------------------
 
 If it comes to the crunch a little more room can be made by
-reassembling, minus some frills.  Sixty-two bytes can be saved by
+reassembling, minus some frills.  Fifty-three bytes can be saved by
 reverting portions of source code to the original.  They are:
 
 - 27 bytes unrolling the memory clearing loop (in `src/MOS34`)
 - 5 bytes ensuring RFS file searching terminates (in `src/MOS54`)
 - 6 bytes calculating the cassette file size (in `src/MOS72`)
 - 3 bytes providing the OSWRSC entry (in `src/MOS99`)
-- 9 bytes making faster palette changes (in `src/MOS03`, `src/MOS11`)
 - 4 bytes speeding up character recognition (in `src/MOS11`)
 - 8 bytes freeing &02CF..D1 for programs (in `src/MOS34`, `src/MOS38`).
 
@@ -284,13 +283,13 @@ The switch or jumper must not be toggled while the computer is running.
 OSBYTE 152
 ----------
 
-The OS call to examine the next entry in a system buffer had had a
-fault, which was later fixed in Electron OS 1.00 and OS 2.00 for the
+This OS call, to examine the next entry in a system buffer, had had a
+fault which was later fixed in Electron OS 1.00 and OS 2.00 for the
 Model B+.
 
 Although it is also possible to fix the bug by intercepting the REMV
-vector, the [established workaround][14] for this call relies on the
-value returned in Y instead of the expected entry.  Cross-platform
+vector, the [established workaround][14] for the call relies on the
+value returned in Y in place of the expected entry.  Cross-platform
 applications need to know which OS is running to engage the workaround,
 and until this release it was enough to verify that a series 1 OS was
 installed, by receiving X=1 from an [OSBYTE call with A=0][15] and X=1,
@@ -315,7 +314,7 @@ Known problems
   (it too can be [reassembled][17] to work with this OS).
 - Slogger's Tape to Challenger 3 ROM (T2C3) 1.00 jumps to the hard-coded
   address of the OSBYTE handler in OS 1.20, causing a crash on the next
-  call to OSBYTE. (Patch &8F15 = `JMP &E8AE`.)
+  call to OSBYTE. (Patch &8F15 = `JMP &E8B1`.)
 - Many software titles, especially games, decrypt themselves using the
   OS ROM contents as a key.  These titles are incompatible with OS
   1.26 / NOSP.
