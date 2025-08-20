@@ -85,10 +85,6 @@ SORTY LDAAX V+&02
  BPL SWAPF
  RTS
 
-USAF LDXIM CSX-V
- LDYIM USWS-V
- BNE SWAP2
-
 ;Soft scrolling (non-anom.)
 
 ;Scroll DOWN

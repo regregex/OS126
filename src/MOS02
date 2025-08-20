@@ -556,6 +556,10 @@ US JSR ANOMQ ;Cursors joined ?
  JSR SYTADD ;Attempt to posn. csr
  BCC FSD ;to a JMP CSDSP
 
+USAF LDXIM CSX-V
+ LDYIM USWS-V
+ JMP SWAP2
+
 FFC
  JMP CLATXT ;Clear?, then fast clear
 

@@ -174,17 +174,13 @@ MAN11
  PHA
  CLC
  ADC ATINC ;add incremnet to attenuation
- BVC OK8  ;first check for 8 bit overflow
- ;else overflow. carry=~b7. generate &C0 if b7=0 or &3F if b7=1
+ BVS NOK8 ;if overflow, carry=~b7. generate &C0 if b7=0 or &3F if b7=1
+ CMPIM &C0 ;else compare b7 and b6 (thanks again Woz)
+ BPL ATOK ;if b7=b6 then value in range
+ ADCIM &80 ;else overflow. carry=0. generate &3F if b7=0 or &C0 if b7=1
+NOK8
  ORAIM &7F ;n111 1111 C=~n
  ADCIM &40 ;~~nn nnnn C=n
-OK8
- CMPIM &C0 ;compare b7 and b6 (thanks again Woz)
- BPL ATOK ;if b7=b6 then value in range
- ;else overflow. generate &3F if b7=0 or &C0 if b7=1
- ORAIM &7F ;n111 1111 C=0
- ADCIM &40 ;~011 1111 C=n
- ADCIM &80 ;nn~~ ~~~~ C=~n
 ATOK
  STAAX ATTN ;store as new attenuation
  DEC ATINC
@@ -248,17 +244,6 @@ ENDSW
  JMP MNLOP
 
 
-SNDRST
- LDXIM &08
-;
-RLOP
- DEX
- JSR SCRST ;reset sound channel X
- CPXIM &04
- BNE RLOP
-;
-EDUP  ;end of 1/100th sec processing
- RTS
 
 
 NXTNT
@@ -311,6 +296,20 @@ CWP
  BMI FCNVRT ;[ALWAYS JUMP, set period of chip to zero]
 
 
+SNDRST
+ LDXIM &08
+;
+RLOP
+ DEX
+ JSR SCRST ;reset sound channel X
+ CPXIM &04
+ BNE RLOP
+;
+PROG
+PRTS   ;rts pointer
+EDUP  ;end of 1/100th sec processing
+ RTS
+
 NGONG
  PHP
  SEI
@@ -323,14 +322,13 @@ NGONG
  STAAX ACTIV ;set channel as inactive
 NOGO2
  PLP
+SRTS   ;must point to RTS command
+LNOTGO
 NOTGO
  LDYAX ENVLP
  INY
  BNE PROG
- JSR MINATN ;update attenuation of box envelopes
-PROG
-PRTS   ;rts pointer
- RTS
+ JMP MINATN ;update attenuation of box envelopes
 
 
 NOTWT
@@ -338,21 +336,17 @@ NOTWT
  BCS NGONG ;[queue empty]
  ANDIM &03
  BEQ NNWAT ;[no chord commands for next note]
- LDA NOWAT
- BEQ SRTS ;[full chord already accepted,ignore this channel for now]
- INCAX WAIT ;set waiting flag
+;NB NNWAT->STRNT now relies on C=0
 ;Y undefined after EXAM (NAUG p.137)
- TAY ;check for chord being built (different V returned)
+ LDY NOWAT
+ BEQ SRTS ;[full chord already accepted,ignore this channel for now]
  BPL SMCRD ;chord already being built
- JSR EXAM ;getheader byte again
- ANDIM &03 ;select chord bits
+ ADCIM &01 ;compensate for DEC NOWAT below (different V returned)
  STA NOWAT ;new chord so set number of other channels required
- BPL LNOTGO
 SMCRD
  DEC NOWAT ;decrement the number of channels still required for chord
-SRTS   ;must point to RTS command
-LNOTGO
- JMP NOTGO
+ INCAX WAIT ;set waiting flag
+ BCC NOTGO ;always branch
 
 
 ;routine to convert note to period

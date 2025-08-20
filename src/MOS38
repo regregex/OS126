@@ -245,7 +245,7 @@ COMTAB  ;table of MOS commands
  = ""
  = &80 ;end of table
 
- % 83 ;padding
+ % 94 ;padding
 
 GOIO
  SEC
@@ -310,7 +310,7 @@ ABACUS
  = ""
  = &80 ;end of table
 
- % 251 ;padding
+ % 262 ;padding
  ]
 
 CLINT
